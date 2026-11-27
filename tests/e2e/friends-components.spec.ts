@@ -118,11 +118,17 @@ test('the shared image permission enables avatars and revokes back to initials',
     thumbnail.setVisible(true);
   });
   expect(images).toBe(0);
-  await page.evaluate(async () => (await import('/src/components/world-thumbnail.ts')).setVRChatImagesAllowed(true));
+  const imageSwitch = page.getByRole('switch', { name: 'Load images from VRChat' });
+  await expect(imageSwitch).toBeVisible();
+  await imageSwitch.check();
+  await expect(imageSwitch).toBeVisible();
+  await expect(imageSwitch).toBeChecked();
   await expect(page.locator('.friends-avatar img')).toHaveCount(1);
   await expect(page.locator('.synthetic-world-image img')).toHaveCount(1);
   expect(images).toBe(2);
-  await page.evaluate(async () => (await import('/src/components/world-thumbnail.ts')).setVRChatImagesAllowed(false));
+  await imageSwitch.uncheck();
+  await expect(imageSwitch).toBeVisible();
+  await expect(imageSwitch).not.toBeChecked();
   await expect(page.locator('.friends-avatar img')).toHaveCount(0);
   await expect(page.locator('.friends-avatar')).toHaveText('SF');
   await expect(page.locator('.synthetic-world-image img')).toHaveCount(0);
@@ -154,19 +160,19 @@ test('worker returns Friends data locally and resolves unavailable accounts', as
   expect(result.stopped[0].status).toBe('unavailable');
 });
 
-test('the recap has only one image switch on the landing page', async ({ page }) => {
+test('the landing page exposes one image switch before the recommendation opens', async ({ page }) => {
   await page.goto('http://127.0.0.1:4174/tests/fixtures/timeline.html');
   await expect(page.locator('.timeline-lab')).toBeVisible();
   const result = await page.evaluate(async () => {
     const { createLandingPage } = await import('/src/pages/entry/landing.ts');
     const landing = createLandingPage();
     return {
-      total: landing.querySelectorAll('input[role="switch"]').length,
+      recommendationOpen: landing.querySelector<HTMLDialogElement>('.image-recommendation-dialog')?.open,
       main: landing.querySelectorAll('.import-panel input[role="switch"]').length,
       label: landing.querySelector('.landing-options .image-permission-label')?.textContent,
     };
   });
-  expect(result.total).toBe(1);
+  expect(result.recommendationOpen).toBe(false);
   expect(result.main).toBe(1);
   expect(result.label).toContain('Load images from VRChat');
 });
@@ -186,6 +192,22 @@ for (const id of ['time', 'overlap', 'strangers', 'mutuals', 'boops', 'invites',
     expect(note.y + note.height).toBeLessThan(ruler.y - 120);
   });
 }
+
+test('Mutual Friends shows cache instructions with rankings and without a saved cache', async ({ page }) => {
+  await mount(page, true, 'mutuals');
+  const help = page.locator('.friends-cache-help');
+  await expect(page.locator('.friends-list li')).toHaveCount(10);
+  await expect(help).toBeVisible();
+  await expect(help).toContainText('Charts');
+  await expect(help).toContainText('Mutual Friend Network');
+  await expect(help).toContainText('Fetch Again');
+  await expect(help).toContainText('Start Fetch');
+  await expect(help).toContainText('re-import your database');
+  await page.evaluate(() => (window as any).__friends.update({ id: 'mutuals', status: 'unavailable', total: 0, rankingStatus: 'unavailable', entries: [], source: 'import' }));
+  await expect(page.locator('.friends-status')).toContainText('No saved mutual friends data');
+  await expect(page.locator('.friends-body')).toBeHidden();
+  await expect(help).toBeVisible();
+});
 
 test('boop particles fire just after first place settles, then clear on leaving', async ({ page }) => {
   await mount(page, false, 'boops');

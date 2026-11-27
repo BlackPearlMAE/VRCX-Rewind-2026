@@ -1,3 +1,4 @@
+import { dismissImageRecommendation } from '../fixtures/startup';
 import { expect, test } from '@playwright/test';
 
 test('loads for at least 1.2 seconds, then starts music only on Start', async ({ page }) => {
@@ -73,6 +74,7 @@ test('waits for SQLite before offering Start, then imports and exports offline',
   const requests: string[] = [];
   page.on('request', r => requests.push(r.url()));
   await page.locator('.file-input').setInputFiles({ name: 'offline.sqlite3', mimeType: 'application/octet-stream', buffer: await databaseFixture('benchmark') });
+  await dismissImageRecommendation(page);
   await page.getByRole('button', { name: 'Start your rewind', exact: true }).click();
   await page.getByRole('button', { name: 'Go to Share', exact: true }).click();
   await expect(page.locator('.share-card-canvas')).toHaveAttribute('aria-label', /1\. hours played/);

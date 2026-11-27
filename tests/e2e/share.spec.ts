@@ -1,7 +1,7 @@
 import initSqlJs from 'sql.js';
 import { databaseFixture } from '../fixtures/database';
 import { test, expect } from '@playwright/test';
-import { enterSite } from '../fixtures/startup';
+import { enterSite, dismissImageRecommendation } from '../fixtures/startup';
 
 test('share cards export offline, show friend details by default, and use local uploads', async ({ page, context }) => {
   const errors: string[] = [];
@@ -78,6 +78,7 @@ test('imported cards use the selected account and offer recent distinct loadable
     await route.fulfill({status:200,contentType:'image/png',headers:{'access-control-allow-origin':'*'},body:Buffer.from(png,'base64')});
   });
   await page.locator('.file-input').setInputFiles({name:'fixture.sqlite3',mimeType:'application/octet-stream',buffer});
+  await dismissImageRecommendation(page);
   await expect(page.getByRole('button',{name:'Start your rewind',exact:true})).toBeEnabled();
   await page.getByRole('button',{name:'Start your rewind',exact:true}).click();
   expect(imageRequests).toEqual([]);
@@ -212,6 +213,7 @@ for(const {merged,cors} of [{merged:true,cors:true},{merged:false,cors:true},{me
       await route.fulfill(pictures[id] ? {status:200,contentType:'image/png',headers:cors ? {'access-control-allow-origin':'*'} : {'access-control-allow-origin':'https://different-origin.invalid'},body:Buffer.from(pictures[id]!,'base64')} : {status:404,body:''});
     });
     await page.locator('.file-input').setInputFiles({name:'fixture.sqlite3',mimeType:'application/octet-stream',buffer});
+    await dismissImageRecommendation(page);
     await page.getByRole('button',{name:'Start your rewind',exact:true}).click();
     await page.getByRole('button',{name:'Go to Share',exact:true}).click();
     await page.getByRole('button',{name:'Worlds',exact:true}).click();
@@ -286,6 +288,7 @@ test('Friends highlights show details by default and load thumbnails only with i
   await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/');await enterSite(page);
   const remoteRequests:string[]=[];page.on('request',request=>{if(request.url().includes('vrchat.cloud'))remoteRequests.push(request.url());});
   await page.locator('.file-input').setInputFiles({name:'friends.sqlite3',mimeType:'application/octet-stream',buffer});
+  await dismissImageRecommendation(page);
   await page.getByRole('button',{name:'Start your rewind',exact:true}).click();
   await page.getByRole('button',{name:'Go to Share',exact:true}).click();
   await page.getByRole('button',{name:'Friends',exact:true}).click();
@@ -419,6 +422,7 @@ test('Your Stats uses discoveries rather than all worlds visited',async({page})=
   const buffer=Buffer.from(db.export());db.close();
   await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/');await enterSite(page);
   await page.locator('.file-input').setInputFiles({name:'stats.sqlite3',mimeType:'application/octet-stream',buffer});
+  await dismissImageRecommendation(page);
   await page.getByRole('button',{name:'Start your rewind',exact:true}).click();await page.getByRole('button',{name:'Go to Share',exact:true}).click();
   await page.getByRole('button',{name:'Your stats',exact:true}).click();
   await expect(page.locator('.share-card-canvas')).toHaveAttribute('aria-label',/1\. friends made.*3\. instances visited.*1\. worlds discovered/);
@@ -451,6 +455,7 @@ test('missing world uploads live on the left, keep the card centered, and hide w
   await page.setViewportSize({width:1920,height:1080});await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/');await enterSite(page);
   const requests:string[]=[];page.on('request',request=>{if(request.url().includes('vrchat.cloud'))requests.push(request.url());});
   await page.locator('.file-input').setInputFiles({name:'worlds.sqlite3',mimeType:'application/octet-stream',buffer});
+  await dismissImageRecommendation(page);
   await page.getByRole('button',{name:'Start your rewind',exact:true}).click();await page.getByRole('button',{name:'Go to Share',exact:true}).click();
   await page.getByRole('button',{name:'Worlds',exact:true}).click();
   const panel=page.locator('.share-missing-pictures'),canvas=page.locator('.share-card-canvas');

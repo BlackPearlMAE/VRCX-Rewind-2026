@@ -1,4 +1,4 @@
-import { enterSite } from '../fixtures/startup';
+import { enterSite, dismissImageRecommendation } from '../fixtures/startup';
 import { expect, test } from '@playwright/test';
 import { databaseFixture } from '../fixtures/database';
 
@@ -10,6 +10,7 @@ test('validates real SQLite contents, updates button, and clears an earlier sele
   await page.goto('/');
   await enterSite(page);
   await choose(page, await databaseFixture(), 'renamed.data');
+  await dismissImageRecommendation(page);
   await expect(page.getByRole('button', { name: 'Start your rewind' })).toBeEnabled();
   await expect(page.getByRole('status')).toContainText('checked. Ready for your rewind.');
   await expect(page.getByRole('status')).toContainText('renamed.data');
@@ -45,6 +46,7 @@ test('preloaded checker works offline without post-selection requests or stored 
   page.on('request', request => requests.push(request.url()));
   await context.setOffline(true);
   await choose(page, await databaseFixture());
+  await dismissImageRecommendation(page);
   await expect(page.getByRole('button', { name: 'Start your rewind' })).toBeEnabled();
   expect(requests).toEqual([]);
   expect(await page.evaluate(async () => ({ local: localStorage.length, session: sessionStorage.length, indexed: (await indexedDB.databases()).length }))).toEqual({ local: 0, session: 0, indexed: 0 });
@@ -55,6 +57,7 @@ for (const width of [1920, 390]) {
     await page.goto('/');
     await enterSite(page);
     await choose(page, await databaseFixture());
+    await dismissImageRecommendation(page);
     await expect(page.locator('.import-panel')).toHaveClass(/is-ready/);
     await expect(page.locator('.panel-copy')).not.toBeVisible();
     await expect(page.locator('.database-location')).not.toBeVisible();
@@ -76,6 +79,7 @@ for (const width of [1920, 390]) {
     const picker = page.waitForEvent('filechooser');
     await page.getByRole('button', { name: 'Select your VRCX database' }).click();
     await (await picker).setFiles({ name: 'replacement.sqlite3', mimeType: 'application/octet-stream', buffer: await databaseFixture() });
+    await dismissImageRecommendation(page);
     await expect(page.getByRole('status')).toContainText('replacement.sqlite3 checked.');
     await page.locator('.import-action').evaluate(async element => { await Promise.all(element.getAnimations().map(animation => animation.finished)); });
     await page.screenshot({ path: `test-results/database-ready-${width}.png` });
@@ -100,7 +104,7 @@ for (const [kind, message] of [
 }
 
 
-test('ready import hides demo and enabled image prompts without showing preparation text',async({page})=>{
+test('ready import hides demo and keeps the landing and Share image switches available',async({page})=>{
   await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/');await enterSite(page);
   const demo=page.getByRole('button',{name:'Try demo',exact:true});
   await expect(demo).toBeVisible();
@@ -110,12 +114,13 @@ test('ready import hides demo and enabled image prompts without showing preparat
   await choose(page,await databaseFixture('benchmark'));
   await expect(page.getByRole('button',{name:'Start your rewind',exact:true})).toBeVisible();
   await expect(demo).toBeHidden();await expect(page.locator('.preparation-status')).toHaveCount(0);
-  await expect(page.locator('.image-permission-tooltip')).toBeHidden();
+  await expect(page.locator('.image-permission-tooltip')).toBeVisible();
   await page.screenshot({path:'test-results/landing-ready-clean.png',fullPage:true});
   await page.getByRole('button',{name:'Start your rewind',exact:true}).click();await page.getByRole('button',{name:'Go to Share',exact:true}).click();
-  await expect(page.locator('.share-image-permission')).toBeHidden();await expect(page.locator('.share-load-avatars')).toBeChecked();
-  await page.locator('.share-load-avatars').evaluate((input:HTMLInputElement)=>{input.checked=false;input.dispatchEvent(new Event('change',{bubbles:true}));});
-  await expect(page.locator('.share-image-permission')).toBeVisible();
+  const shareImageSwitch=page.getByLabel('Load world and avatar pictures from VRChat');
+  await expect(shareImageSwitch).toBeVisible();await expect(shareImageSwitch).toBeChecked();
+  await shareImageSwitch.uncheck();
+  await expect(shareImageSwitch).toBeVisible();await expect(shareImageSwitch).not.toBeChecked();
   await page.getByRole('button',{name:'Back to start',exact:true}).click();
   await expect(page.locator('.image-permission-tooltip')).toBeVisible();await expect(demo).toBeHidden();
   await page.getByRole('button',{name:'Choose a new database',exact:true}).click();

@@ -1,5 +1,5 @@
 import { savedTimePlayedDemo } from '../../src/data/timeline-demo';
-import { enterSite } from '../fixtures/startup';
+import { enterSite, dismissImageRecommendation } from '../fixtures/startup';
 import { test, expect } from '@playwright/test';
 import { databaseFixture } from '../fixtures/database';
 
@@ -47,6 +47,7 @@ test('demo and imported totals remain separate when switching sources on mobile'
   await page.screenshot({ path: 'test-results/demo-hours-mobile.png' });
   await page.getByRole('button', { name: 'Back to start' }).click();
   await page.locator('.file-input').setInputFiles({ name: 'fixture.sqlite3', mimeType: 'application/octet-stream', buffer: await databaseFixture('benchmark') });
+  await dismissImageRecommendation(page);
   await page.getByRole('button', { name: 'Start your rewind' }).click();
   await expect(page.locator('.recap-chrome .demo-badge')).toBeHidden();
   await page.getByRole('button', { name: 'Next page', exact: true }).click();

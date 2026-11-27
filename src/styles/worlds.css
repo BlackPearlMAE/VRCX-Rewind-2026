@@ -55,6 +55,7 @@
 .worlds-image-controls { display: flex; flex-direction: column; align-items: flex-start; gap: .4rem; }
 .worlds-image-note[hidden] { display: none; }
 
+.worlds-image-controls .recap-image-permission { margin: 0; padding: 0; }
 .worlds-image-controls .image-permission-label { font-size: 1.0625rem; gap: .8rem; }
 
 /* Match the larger chapter content on its introduction page. */

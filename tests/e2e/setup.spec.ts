@@ -1,4 +1,4 @@
-import { enterSite } from '../fixtures/startup';
+import { enterSite, dismissImageRecommendation } from '../fixtures/startup';
 import { databaseFixture } from '../fixtures/database';
 import { expect, test } from '@playwright/test';
 
@@ -15,6 +15,7 @@ test('landing loads without runtime errors or external requests', async ({ page 
   const picker = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Select your VRCX database' }).click();
   await (await picker).setFiles({ name: 'VRCX.sqlite3', mimeType: 'application/octet-stream', buffer: await databaseFixture() });
+  await dismissImageRecommendation(page);
   await expect(page.getByRole('status')).toContainText('checked. Ready for your rewind.');
   await page.getByRole('link', { name: /More Information/ }).click();
   await expect(page).toHaveURL(/#site-information$/);

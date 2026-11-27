@@ -57,7 +57,6 @@ export function createSharePage(onPrevious: () => void, onShow: () => void, load
   const imagePermission=section.querySelector<HTMLInputElement>('.share-load-avatars')!;
   function syncImagePermission() {
     imagePermission.checked=getVRChatImagesAllowed();
-    section.querySelector<HTMLElement>('.share-image-permission')!.hidden=imagePermission.checked;
     section.querySelector<HTMLElement>('.share-image-note')!.hidden=imagePermission.checked;
   }
   syncImagePermission();

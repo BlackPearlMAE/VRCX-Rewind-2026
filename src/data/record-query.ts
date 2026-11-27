@@ -20,6 +20,8 @@ export function calculateRecordPages(db: Database, account: string, now = Date.n
     parameters[`:month_end_${month}`] = Math.min(cutoff, calendarMidnight(year, month + 1, 1, timeZone)) / 1000;
     return `(${month}, :month_start_${month}, :month_end_${month})`;
   });
+  parameters[':year_start_s'] = from / 1000;
+  parameters[':year_end_s'] = cutoff / 1000;
   const buckets = `periods(month, start_s, end_s) AS (VALUES ${periods.join(',')})`;
   function query(sql: string): Record<string, SqlValue>[] {
     const statement = db.prepare(sql.replaceAll('{{account}}', account));
@@ -146,7 +148,7 @@ export function calculateRecordPages(db: Database, account: string, now = Date.n
       daysTimeline.weeks = sectionWeeks(activeSections, visitCoverage);
       records.set('days', monthlyRecord('days', daysTimeline));
       records.set('streak', {
-        id: 'streak', status: 'ready', year, value: best, month: null, streaks: allStreaks,
+        id: 'streak', status: 'ready', year, value: best, month: null, streaks: allStreaks, yearlyTotal: active.reduce((sum, days) => sum + days, 0),
         ...(best ? { range: { start: bestStart, end: bestEnd }, ranges: bestRanges } : {}),
       });
     } catch { /* Other record types can still be calculated. */ }
@@ -175,7 +177,14 @@ export function calculateRecordPages(db: Database, account: string, now = Date.n
       const coverage = { first: first === null || first === undefined ? Infinity : Number(first) * 1000, last: cutoff };
       const timeline = chart(topic, unit, values, coverage);
       timeline.weeks = countWeeks(events, aggregate, coverage);
-      return monthlyRecord(id, timeline);
+      // Count distinct entities over the entire period, not once per month.
+      // A repeated world/instance/avatar in different months is still one entity.
+      const yearlyTotal = aggregate.includes('DISTINCT')
+        ? Number(query(`WITH events AS (${events})
+            SELECT ${aggregate} AS value FROM events e
+            WHERE e.at_s >= :year_start_s AND e.at_s < :year_end_s;`)[0]!.value)
+        : undefined;
+      return monthlyRecord(id, timeline, { yearlyTotal });
     });
   }
   counts('discoveries', 'Worlds first discovered', 'worlds', "SELECT world_id AS item,MIN(unixepoch(created_at,'subsec')) AS at_s FROM gamelog_location WHERE location GLOB 'wrld_*:*' AND world_id GLOB 'wrld_*' GROUP BY world_id");

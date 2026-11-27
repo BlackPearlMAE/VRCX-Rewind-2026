@@ -390,7 +390,7 @@ main { position: relative; isolation: isolate; }
 }
 .path-help-button:hover { border-color: #8fd2c3; color: #baf1e3; background: #ffffff08; }
 html.has-help-dialog { overflow: hidden; }
-.path-help-dialog {
+:is(.path-help-dialog, .image-recommendation-dialog) {
   width: min(36rem, calc(100% - 2rem));
   max-height: calc(100svh - 3rem);
   padding: 2rem;
@@ -403,21 +403,21 @@ html.has-help-dialog { overflow: hidden; }
   line-height: 1.6;
   overscroll-behavior: contain;
 }
-.path-help-dialog::backdrop { background: #101413b8; backdrop-filter: blur(5px); }
-.path-help-dialog h2 { margin: 0 2rem 1rem 0; color: #f3f6f4; font-size: 1.6rem; line-height: 1.3; }
-.path-help-dialog p { margin: 0 0 1.25rem; }
+:is(.path-help-dialog, .image-recommendation-dialog)::backdrop { background: #101413b8; backdrop-filter: blur(5px); }
+:is(.path-help-dialog, .image-recommendation-dialog) h2 { margin: 0 2rem 1rem 0; color: #f3f6f4; font-size: 1.6rem; line-height: 1.3; }
+:is(.path-help-dialog, .image-recommendation-dialog) p { margin: 0 0 1.25rem; }
 .path-help-dialog code { font-family: Consolas, monospace; color: #e1f0e9; overflow-wrap: anywhere; }
 .path-help-dialog .dialog-folder { padding: .7rem 1rem; border: 1px solid #53605b; border-radius: .4rem; background: #222725; }
 .path-help-dialog ol { margin: 0 0 1.5rem; padding-left: 1.4rem; }
 .path-help-dialog li + li { margin-top: .8rem; }
 .path-help-dialog kbd { padding: .1rem .3rem; border: 1px solid #5a6560; border-radius: .2rem; background: #343b38; font-size: .875rem; }
-.path-help-dialog .dialog-note { color: #aebbb5; font-size: .875rem; }
+:is(.path-help-dialog, .image-recommendation-dialog) .dialog-note { color: #aebbb5; font-size: .875rem; }
 .dialog-close { position: absolute; top: .75rem; right: .75rem; width: 2rem; height: 2rem; border: 0; border-radius: .3rem; background: transparent; color: #b9c6bf; font-size: 1.75rem; cursor: pointer; }
 .dialog-close:hover { background: #ffffff0a; color: #fff; }
 .dialog-done { padding: .65rem 1.25rem; border: 1px solid #697c73; border-radius: .4rem; background: #394a42; color: #e4f3eb; font-weight: 700; cursor: pointer; }
 .dialog-done:hover { background: #435b4f; }
 @media (max-width: 650px) {
-  .path-help-dialog { padding: 1.5rem; }
+  :is(.path-help-dialog, .image-recommendation-dialog) { padding: 1.5rem; }
 }
 .path-help-dialog .dialog-folder { position: relative; display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: 1.25rem; padding: 0 0 0 1rem; }
 .dialog-copy-path { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; align-self: stretch; padding: .75rem; border: 0; border-left: 1px solid #53605b; border-radius: 0 .35rem .35rem 0; background: #323c37; color: #d6e7de; font-size: .875rem; cursor: pointer; }
@@ -426,16 +426,16 @@ html.has-help-dialog { overflow: hidden; }
 .dialog-copy-feedback.is-visible { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .dialog-copy-feedback { transition: none; } }
 /* Neutral charcoal help window, with the page's pink used only for emphasis. */
-.path-help-dialog { width: min(43rem, calc(100% - 2rem)); border-color: #626267; background: #2b2b2e; color: #d4d4d9; }
-.path-help-dialog::backdrop { background: #101014bf; }
-.path-help-dialog h2 { color: #f3f3f5; }
+:is(.path-help-dialog, .image-recommendation-dialog) { width: min(43rem, calc(100% - 2rem)); border-color: #626267; background: #2b2b2e; color: #d4d4d9; }
+:is(.path-help-dialog, .image-recommendation-dialog)::backdrop { background: #101014bf; }
+:is(.path-help-dialog, .image-recommendation-dialog) h2 { color: #f3f3f5; }
 .path-help-dialog code { color: #eeeef1; }
 .path-help-dialog .dialog-folder { border-color: #58585f; background: #232326; }
 .dialog-copy-path { border-color: #58585f; background: #38383d; color: #dddde3; }
 .dialog-copy-path:hover { background: #47474e; }
 .dialog-copy-feedback, .path-field .copy-feedback { background: #39343e; color: #f1e7f5; }
 .path-help-dialog kbd { border-color: #606067; background: #39393e; color: #ececf0; }
-.path-help-dialog .dialog-note { color: #b1b1ba; }
+:is(.path-help-dialog, .image-recommendation-dialog) .dialog-note { color: #b1b1ba; }
 .dialog-close { color: #c3c3cb; }
 .dialog-done { border-color: #76717d; background: #424047; color: #f3eef7; }
 .dialog-done:hover { background: #514b59; }
@@ -468,7 +468,7 @@ html.has-help-dialog { overflow: hidden; }
 }
 @media (prefers-reduced-motion: reduce) { .import-panel { transition: none; } }
 /* Windows file-picker illustration: native structure, with only the address bar accented. */
-.path-help-dialog { width: min(49rem, calc(100% - 2rem)); }
+:is(.path-help-dialog, .image-recommendation-dialog) { width: min(49rem, calc(100% - 2rem)); }
 .picker-callout { margin-bottom: .6rem; color: #e4b8ef; font-size: .875rem; font-weight: 700; }
 .picker-window { border-radius: .3rem; border-color: #66666b; background: #202020; color: #e7e7e7; font-family: 'Segoe UI', 'Questrial', sans-serif; font-size: .875rem; line-height: 1.5; }
 .picker-title { display: flex; align-items: center; justify-content: space-between; padding: .4rem .75rem; background: #101010; }
@@ -651,6 +651,15 @@ html.has-help-dialog { overflow: hidden; }
   text-underline-offset: .2rem;
 }
 .path-help-button:hover { background: #ffffff05; color: #ecd7f6; text-decoration-color: currentColor; }
+@media (prefers-reduced-motion: no-preference) {
+  body:not(.is-starting, .is-opening-startup) .path-help-button:not(.has-opened-instructions) {
+    animation: instructions-glow 2.4s ease-in-out 30s infinite;
+  }
+}
+@keyframes instructions-glow {
+  0%, 100% { box-shadow: 0 0 0 0 #e6a6f400; }
+  50% { box-shadow: 0 0 15px 3px #e6a6f485; }
+}
 html.is-scroll-held { scroll-snap-type: none; }
 
 /* A diagonal blue reflection clipped to the white letter faces. */
@@ -1062,12 +1071,14 @@ html { scroll-snap-type: none; }
 .record-page.is-revealing-record .record-heading,
 .record-page.is-revealing-record .record-month,
 .record-page.is-revealing-record .record-total,
-.record-page.is-revealing-record .record-label { opacity: 0; }
+.record-page.is-revealing-record .record-label,
+.record-page.is-revealing-record .record-yearly-total { opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
   .record-page.is-revealing-record .record-heading,
   .record-page.is-revealing-record .record-month,
   .record-page.is-revealing-record .record-total,
-  .record-page.is-revealing-record .record-label { opacity: 1; }
+  .record-page.is-revealing-record .record-label,
+  .record-page.is-revealing-record .record-yearly-total { opacity: 1; }
 }
 
 /* A barely visible keyword gives each record a little background texture. */
@@ -1134,6 +1145,12 @@ html { scroll-snap-type: none; }
   grid-row: 3;
   margin-top: 1.5rem;
 }
+.record-page[data-record="world-time"] .record-content:has(> .record-world-image:not([hidden])) > .record-yearly-total {
+  grid-column: 1;
+  grid-row: 4;
+  justify-self: center;
+  text-wrap: balance;
+}
 .record-page[data-record="world-time"] .record-world-image {
   position: relative;
   grid-column: 2;
@@ -1157,7 +1174,8 @@ html { scroll-snap-type: none; }
 .record-page[data-record="world-time"] .record-label { margin-top: .4rem; }
 .record-page[data-record="world-time"]:has(.record-world-image:not([hidden])) .record-label { display: none; }
 .record-page[data-record="world-time"] .record-note,
-.record-page[data-record="world-time"] .record-status { grid-column: 1 / -1; }
+.record-page[data-record="world-time"] .record-status,
+.record-page[data-record="world-time"] .recap-image-permission { grid-column: 1 / -1; }
 .record-page.is-revealing-record .record-world-image { opacity: 0; }
 @media (max-width: 760px) {
   .record-page[data-record="world-time"] .record-content:has(> .record-world-image:not([hidden])) {
@@ -1524,3 +1542,12 @@ body > .exclusion-flight { position: fixed; z-index: 1000; pointer-events: none;
   .is-recap-active .recap-navigation .page-wing { width: 8vw; }
   .is-recap-active .friends-body { grid-template-columns: minmax(0, 1fr); margin-inline: 0; }
 }
+
+/* Image recommendation: reuse the help dialog and existing permission switch. */
+html:has(.image-recommendation-dialog[open]) { overflow: hidden; }
+dialog.image-recommendation-dialog { width: min(30rem, calc(100% - 2rem)); box-sizing: border-box; text-align: center; }
+.image-recommendation-dialog h2 { margin: 0 0 1rem; }
+.image-recommendation-dialog .image-permission { margin: 1.5rem auto; padding: 0; }
+.image-recommendation-dialog .image-permission-label { font-size: 1rem; }
+.image-recommendation-dialog .dialog-note { text-align: left; }
+.image-recommendation-dialog .dialog-done { width: 100%; }

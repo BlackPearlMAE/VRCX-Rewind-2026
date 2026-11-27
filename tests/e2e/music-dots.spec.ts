@@ -1,4 +1,4 @@
-import { enterSite } from '../fixtures/startup';
+import { enterSite, dismissImageRecommendation } from '../fixtures/startup';
 import { databaseFixture } from '../fixtures/database';
 import { expect, test } from '@playwright/test';
 
@@ -189,6 +189,7 @@ test('transition letters share the title depth and live music glow', async ({ pa
   await expect.poll(() => page.locator('#landing-title .title-music-glow').evaluate(element => Number(getComputedStyle(element).opacity))).toBeGreaterThan(.6);
   const angle = await page.locator('#landing-title').evaluate(element => getComputedStyle(element).transform);
   await page.locator('.file-input').setInputFiles({ name: 'fixture.sqlite3', mimeType: 'application/octet-stream', buffer: await databaseFixture('benchmark') });
+  await dismissImageRecommendation(page);
   await page.getByRole('button', { name: 'Start your rewind' }).click();
   await expect(page.locator('.transition-title')).toHaveCount(3);
   expect(await page.locator('.transition-title').first().evaluate(element => getComputedStyle(element).transform)).toBe(angle);

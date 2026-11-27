@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test';
 test('folder help opens, explains Windows path, and restores focus on Escape', async ({ page }) => {
   await page.goto('/');
   await enterSite(page);
-  const help = page.getByRole('button', { name: 'Help finding your VRCX database' });
+  const help = page.getByRole('button', { name: 'Instructions' });
   await help.click();
   const modal = page.getByRole('dialog');
   await expect(modal).toBeVisible();
@@ -22,11 +22,34 @@ test('folder help opens, explains Windows path, and restores focus on Escape', a
   await expect(modal).not.toBeVisible();
 });
 
+test('Instructions starts glowing after 30 seconds on the landing page and stops when opened', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/');
+  await expect(page.locator('.path-help-button')).toHaveCSS('animation-name', 'none');
+  await enterSite(page);
+
+  const instructions = page.getByRole('button', { name: 'Instructions', exact: true });
+  await expect(instructions).toHaveCSS('animation-delay', '30s');
+  await instructions.evaluate(element => {
+    const animation = element.getAnimations()[0]!;
+    animation.pause();
+    animation.currentTime = 29_999;
+  });
+  await expect(instructions).toHaveCSS('box-shadow', 'none');
+  await instructions.evaluate(element => { element.getAnimations()[0]!.currentTime = 31_200; });
+  await expect(instructions).not.toHaveCSS('box-shadow', 'none');
+
+  await instructions.click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.getByRole('button', { name: 'Got it' }).click();
+  await expect(instructions).toHaveCSS('animation-name', 'none');
+});
+
 test('folder help fits mobile and closes using its close button', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await enterSite(page);
-  await page.getByRole('button', { name: 'Help finding your VRCX database' }).click();
+  await page.getByRole('button', { name: 'Instructions' }).click();
   const modal = page.getByRole('dialog');
   const box = await modal.boundingBox();
   expect(box!.x).toBeGreaterThanOrEqual(0);
@@ -40,7 +63,7 @@ test('file-name illustration demonstrates pasting once scrolled into view', asyn
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto('/');
   await enterSite(page);
-  await page.getByRole('button', { name: 'Help finding your VRCX database' }).click();
+  await page.getByRole('button', { name: 'Instructions' }).click();
   const field = page.locator('.picker-filename-value');
   await field.scrollIntoViewIfNeeded();
   await expect(field).toHaveClass(/is-demonstrating/);
@@ -62,7 +85,9 @@ test('reduced-motion help shows the completed path without animation', async ({ 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   await enterSite(page);
-  await page.getByRole('button', { name: 'Help finding your VRCX database' }).click();
+  const instructions = page.getByRole('button', { name: 'Instructions', exact: true });
+  await expect(instructions).toHaveCSS('animation-name', 'none');
+  await instructions.click();
   const code = page.locator('.picker-filename-value code');
   await code.scrollIntoViewIfNeeded();
   await expect(code).toHaveCSS('visibility', 'visible');
@@ -74,7 +99,7 @@ for (const width of [1280, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto('/');
     await enterSite(page);
-    await page.getByRole('button', { name: 'Help finding your VRCX database' }).click();
+    await page.getByRole('button', { name: 'Instructions' }).click();
     const field = page.locator('.picker-filename-value');
     await field.scrollIntoViewIfNeeded();
     await expect(field).toHaveClass(/is-demonstrating/);

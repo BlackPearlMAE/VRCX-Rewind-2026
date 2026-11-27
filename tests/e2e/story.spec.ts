@@ -1,4 +1,4 @@
-import { enterSite } from '../fixtures/startup';
+import { enterSite, dismissImageRecommendation } from '../fixtures/startup';
 import { test, expect } from '@playwright/test';
 import { databaseFixture } from '../fixtures/database';
 
@@ -7,6 +7,7 @@ async function start(page: import('@playwright/test').Page) {
   await page.goto('/');
   await enterSite(page);
   await page.locator('.file-input').setInputFiles({ name: 'fixture.sqlite3', mimeType: 'application/octet-stream', buffer: await databaseFixture('benchmark') });
+  await dismissImageRecommendation(page);
   await page.getByRole('button', { name: 'Start your rewind' }).click();
   await expect(page.locator('.story-page[aria-labelledby=story-title]')).toBeFocused();
 }

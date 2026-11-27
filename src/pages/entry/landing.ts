@@ -50,7 +50,7 @@ export function createLandingPage(initialChecker = createDatabaseChecker()): HTM
             <button class="copy-path" type="button" aria-label="Copy VRCX database path" title="Copy database path"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg></button>
           </div>
           <p id="path-help">Paste this into the File name box, then click Open.</p>
-          <button class="path-help-button" type="button" aria-label="Help finding your VRCX database" aria-haspopup="dialog" aria-controls="path-help-dialog">Need help?</button>
+          <button class="path-help-button" type="button" aria-haspopup="dialog" aria-controls="path-help-dialog">Instructions</button>
         </div>
         <div class="import-action">
           <button class="journey-button" type="button"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v1H5a2 2 0 0 0-2 2V7Z"/><path d="M3 12a2 2 0 0 1 2-2h16l-2 9H3v-7Z"/></svg><span>Select your VRCX database</span></button>
@@ -151,9 +151,25 @@ export function createLandingPage(initialChecker = createDatabaseChecker()): HTM
         <figcaption>This is an illustration, not an interactive window. Paste into File name, not the address bar or search box. Your Windows language and layout may differ.</figcaption>
       </figure>
       <p>Prefer drag and drop? Open the folder in File Explorer, then drag <strong>VRCX.sqlite3</strong> onto the database-selection area on this page.</p>      <p class="dialog-note">For a portable or custom VRCX installation, use the folder where it stores your database instead.</p>      <button class="dialog-done" type="button">Got it</button>
+    </dialog>
+    <dialog class="image-recommendation-dialog" id="image-recommendation-dialog" aria-labelledby="image-recommendation-title" aria-describedby="image-recommendation-description image-recommendation-privacy">
+      <h2 id="image-recommendation-title">Enjoy your rewind with images</h2>
+      <p id="image-recommendation-description">We recommend enabling images for the best rewind experience. See world thumbnails and saved avatar pictures alongside your memories.</p>
+      <div class="image-permission">
+        <label class="image-permission-label" for="allow-vrchat-images-dialog">
+          <input id="allow-vrchat-images-dialog" type="checkbox" role="switch" aria-describedby="image-recommendation-privacy" autocomplete="off">
+          <span class="image-permission-track" aria-hidden="true"></span>
+          <span>Load images from VRChat</span>
+        </label>
+      </div>
+      <p id="image-recommendation-privacy" class="dialog-note">Optional. Your browser will request images directly from VRChat and its image hosts, which receive your IP address and the requested image URL. Your database stays on your device.</p>
+      <button class="dialog-done image-recommendation-continue" type="button" autofocus>Continue without images</button>
     </dialog>  `;
 
   const imagePermission = main.querySelector<HTMLInputElement>('#allow-vrchat-images')!;
+  const imageDialog = main.querySelector<HTMLDialogElement>('#image-recommendation-dialog')!;
+  const dialogImagePermission = main.querySelector<HTMLInputElement>('#allow-vrchat-images-dialog')!;
+  const imageDialogContinue = imageDialog.querySelector<HTMLButtonElement>('.image-recommendation-continue')!;
   const imageTooltip = main.querySelector<HTMLElement>('.image-permission-tooltip')!;
   for (const event of ['pointerenter', 'focusin']) imageTooltip.addEventListener(event, () => imageTooltip.classList.remove('is-dismissed'));
   imageTooltip.addEventListener('keydown', event => {
@@ -161,10 +177,23 @@ export function createLandingPage(initialChecker = createDatabaseChecker()): HTM
   });
   imagePermission.checked = false;
   setVRChatImagesAllowed(false);
-  imagePermission.addEventListener('change', () => {
-    setVRChatImagesAllowed(imagePermission.checked);
-  });
-  onVRChatImagesChange(() => { imagePermission.checked = getVRChatImagesAllowed(); imageTooltip.hidden=imagePermission.checked && !!imageTooltip.closest('.import-panel')?.classList.contains('is-ready'); });
+  let imagesEnabledOnLanding = false;
+  function setLandingImagePermission(input: HTMLInputElement): void {
+    imagesEnabledOnLanding = input.checked;
+    setVRChatImagesAllowed(input.checked);
+  }
+  imagePermission.addEventListener('change', () => setLandingImagePermission(imagePermission));
+  dialogImagePermission.addEventListener('change', () => setLandingImagePermission(dialogImagePermission));
+  function syncImagePermission(): void {
+    const allowed = getVRChatImagesAllowed();
+    imagePermission.checked = dialogImagePermission.checked = allowed;
+    if (!allowed) imagesEnabledOnLanding = false;
+    imageTooltip.hidden = allowed && !imagesEnabledOnLanding && !!imageTooltip.closest('.import-panel')?.classList.contains('is-ready');
+    imageDialogContinue.textContent = allowed ? 'Continue with images' : 'Continue without images';
+  }
+  onVRChatImagesChange(syncImagePermission);
+  syncImagePermission();
+  imageDialogContinue.addEventListener('click', () => imageDialog.close());
 
   const title = createTitle('VRCX REWIND 2026', {}, 'h1');
   title.id = 'landing-title';
@@ -190,6 +219,7 @@ export function createLandingPage(initialChecker = createDatabaseChecker()): HTM
   const helpButton = main.querySelector<HTMLButtonElement>('.path-help-button')!;
   helpButton.addEventListener('click', () => {
     helpDialog.showModal();
+    helpButton.classList.add('has-opened-instructions');
     document.documentElement.classList.add('has-help-dialog');
   });
   for (const closeButton of helpDialog.querySelectorAll<HTMLButtonElement>('.dialog-close, .dialog-done')) {
@@ -604,7 +634,7 @@ export function createLandingPage(initialChecker = createDatabaseChecker()): HTM
     }
     importPanel.classList.toggle('is-ready', collapsed);
     demoButton.hidden=collapsed;
-    imageTooltip.hidden=collapsed && imagePermission.checked;
+    syncImagePermission();
     panelCopy.hidden = collapsed;
     databaseLocation.hidden = collapsed;
     dropHint.hidden = collapsed;
@@ -612,6 +642,18 @@ export function createLandingPage(initialChecker = createDatabaseChecker()): HTM
     buttonIcon.innerHTML = collapsed ? '<path d="m8 4 12 8-12 8V4Z"/>' : folderIcon;
   }
   let selectionRevision = 0;
+  let recommendedRevision = -1;
+  function showImageRecommendation(): void {
+    if (!selectedFile || button.dataset.state !== 'ready' || getVRChatImagesAllowed() || recommendedRevision === selectionRevision || imageDialog.open || helpDialog.open) return;
+    recommendedRevision = selectionRevision;
+    syncImagePermission();
+    imageDialog.showModal();
+  }
+  helpDialog.addEventListener('close', showImageRecommendation);
+  imageDialog.addEventListener('close', () => {
+    if (imageDialog.open || button.dataset.state !== 'ready' || !selectedFile) return;
+    (button.disabled ? accountSelect : button).focus({ preventScroll: true });
+  });
   function resetSelection(message: string): void {
     if (selectedFile || running) cancelPreparation();
     selectedFile = undefined;
@@ -626,6 +668,7 @@ export function createLandingPage(initialChecker = createDatabaseChecker()): HTM
     status.textContent = message;
   }
   async function selectFiles(files: FileList | File[]): Promise<void> {
+    if (imageDialog.open) imageDialog.close();
     if (selectedFile || running) cancelPreparation();
     selectedFile = undefined;
     accountLabel.hidden = true;
@@ -690,6 +733,7 @@ export function createLandingPage(initialChecker = createDatabaseChecker()): HTM
     button.removeAttribute('title');
     status.dataset.state = 'ready';
     status.textContent = `${file.name} checked. Ready for your rewind.`;
+    showImageRecommendation();
     if (!reduceMotion) {
       main.querySelector<HTMLElement>('.import-action')!.animate(
         [{ opacity: 0, transform: 'translateY(10px) scale(.96)' }, { opacity: 1, transform: 'translateY(0) scale(1)' }],

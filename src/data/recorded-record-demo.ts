@@ -2256,6 +2256,7 @@ export const recordedRecordDemo: readonly RecordPageData[] = [
   },
   {
     "id": "instances",
+    "yearlyTotal": 480, // Synthetic demo: illustrative distinct instance count.
     "status": "ready",
     "value": 68,
     "month": 4,
@@ -2649,6 +2650,7 @@ export const recordedRecordDemo: readonly RecordPageData[] = [
   },
   {
     "id": "worlds",
+    "yearlyTotal": 60, // Matches the synthetic worlds chapter.
     "status": "ready",
     "value": 29,
     "month": 4,
@@ -3042,6 +3044,7 @@ export const recordedRecordDemo: readonly RecordPageData[] = [
   },
   {
     "id": "avatars",
+    "yearlyTotal": 9, // Synthetic demo: uploads are distinct across months.
     "status": "ready",
     "value": 3,
     "month": 3,

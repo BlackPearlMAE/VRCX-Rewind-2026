@@ -3,7 +3,8 @@ import { createPageProgress, recapPages } from '../../components/page-progress';
 import { addPageKeyboardNavigation } from '../../components/page-navigation';
 import { recapHeader } from '../../components/recap-header';
 import { createTitle } from '../../components/title';
-import { createWorldThumbnail, getVRChatImagesAllowed, onVRChatImagesChange } from '../../components/world-thumbnail';
+import { createRecapImagePermission } from '../../components/recap-image-permission';
+import { createWorldThumbnail, getVRChatImagesAllowed, onVRChatImagesChange, permittedImage } from '../../components/world-thumbnail';
 import { worldsDefinitions, type WorldsId, type WorldsPageData } from '../../data/worlds-data';
 
 /** Desktop chapter pages; thumbnails enhance the same readable, text-first lists. */
@@ -62,9 +63,11 @@ export function createWorldsPage(id: WorldsId, onPrevious: () => void, onNext: (
   const failedThumbnails = new Set<object>();
   const imageDisclaimer = section.querySelector<HTMLElement>('.worlds-image-note')!;
   const imageControls = section.querySelector<HTMLElement>('.worlds-image-controls')!;
+  const imagePermission = createRecapImagePermission(section);
+  imageControls.prepend(imagePermission.element);
   function imageNote() {
     const count = getVRChatImagesAllowed() ? failedThumbnails.size : 0;
-    imageControls.hidden = count === 0;
+    imageControls.hidden = imagePermission.element.hidden && count === 0;
     imageDisclaimer.hidden = count === 0;
     imageDisclaimer.textContent = count ? count === 1 ? 'Could not load 1 image.' : `Could not load ${count} images.` : '';
   }
@@ -119,6 +122,7 @@ export function createWorldsPage(id: WorldsId, onPrevious: () => void, onNext: (
     section.querySelector<HTMLElement>('.worlds-demo-label')!.hidden = result?.source !== 'recorded-aggregate';
     body.hidden = !ready || result!.total === 0;
     status.textContent = !result ? 'Preparing your worlds…' : !ready ? 'This topic is unavailable in the selected history. Required activity fields may be missing.' : result.total === 0 ? `No ${definition.unit} in the recorded recap period.` : '';
+    imagePermission.setAvailable(!body.hidden && !!result?.entries.some(entry => entry.worldId || (entry.imageUrl && permittedImage(entry.imageUrl))));
     imageNote();
     summary.hidden = !ready || !ranked;
     if (!ready) {

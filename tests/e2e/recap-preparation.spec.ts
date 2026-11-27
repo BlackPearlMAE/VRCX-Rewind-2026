@@ -1,5 +1,5 @@
 import initSqlJs from 'sql.js';
-import { enterSite } from '../fixtures/startup';
+import { enterSite, dismissImageRecommendation } from '../fixtures/startup';
 import { test, expect } from '@playwright/test';
 import { databaseFixture } from '../fixtures/database';
 
@@ -28,6 +28,7 @@ test('prepares only recap data offline and reuses it when the recap is reopened'
   await context.setOffline(true);
   const requests: string[] = []; page.on('request', r => requests.push(r.url()));
   await page.locator('.file-input').setInputFiles({ name: 'synthetic.sqlite3', mimeType: 'application/octet-stream', buffer: await databaseFixture('benchmark') });
+  await dismissImageRecommendation(page);
   const stages = ['timeline', 'records', 'worlds', 'friends'];
   await expect.poll(() => page.evaluate(() => (window as any).__databaseReplies.filter((type: string) => ['timeline', 'records', 'worlds', 'friends'].includes(type)))).toEqual(stages);
   await expect(page.locator('.sql-benchmark, .benchmark-cancel, .preparation-status')).toHaveCount(0);
@@ -78,8 +79,10 @@ test('replacing a database cancels its preparation and shows only the new recap'
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/'); await enterSite(page); await context.setOffline(true);
   await page.locator('.file-input').setInputFiles({ name: 'first.sqlite3', mimeType: 'application/octet-stream', buffer: await databaseFixture('benchmark') });
+  await dismissImageRecommendation(page);
   await page.getByRole('button', { name: 'Choose a new database', exact: true }).click();
   await page.locator('.file-input').setInputFiles({ name: 'second.sqlite3', mimeType: 'application/octet-stream', buffer: replacement });
+  await dismissImageRecommendation(page);
   await page.getByRole('button', { name: 'Start your rewind', exact: true }).click();
   await page.getByRole('button', { name: 'Go to Share', exact: true }).click();
   await expect(page.locator('.share-card-canvas')).toHaveAttribute('aria-label', /2\. hours played/);
@@ -157,6 +160,7 @@ test('account selection and switching work offline with account-specific Friends
   await context.setOffline(true);
   const requests: string[] = []; page.on('request', r => { if (/^https?:/.test(r.url())) requests.push(r.url()); });
   await page.locator('.file-input').setInputFiles({ name: 'accounts.sqlite3', mimeType: 'application/octet-stream', buffer });
+  await dismissImageRecommendation(page);
   const account = page.getByLabel('Account for your rewind', { exact: true });
   await expect(account).toBeVisible();
   await expect(page.getByRole('button', { name: 'Start your rewind', exact: true })).toBeDisabled();

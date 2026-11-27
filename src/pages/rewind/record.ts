@@ -1,12 +1,13 @@
 import type { createTimelineSynth } from '../../components/timeline-synth';
 import { daysAttendanceRecord } from '../../data/days-attendance-record';
-import { createWorldThumbnail } from '../../components/world-thumbnail';
+import { createRecapImagePermission } from '../../components/recap-image-permission';
+import { createWorldThumbnail, permittedImage } from '../../components/world-thumbnail';
 import { createStreakTimeline } from '../../components/streak-timeline';
 import { recapHeader } from '../../components/recap-header';
 import { addPageKeyboardNavigation } from '../../components/page-navigation';
 import { createPageProgress, recapPages } from '../../components/page-progress';
 import { createMonthlyTimeline } from '../../components/monthly-timeline';
-import { recordDefinitions, type RecordId, type RecordPageData } from '../../data/record-pages';
+import { recordDefinitions, recordYearlyDetail, type RecordId, type RecordPageData } from '../../data/record-pages';
 
 /** One data-driven record layout, sharing the recap's typography, chrome and footer. */
 export function createRecordPage(id: RecordId, onPrevious: () => void, onNext: (() => void) | undefined, onShow: () => void, audio?: Pick<ReturnType<typeof createTimelineSynth>, 'start' | 'update' | 'settled' | 'finish' | 'stop'>) {
@@ -20,7 +21,7 @@ export function createRecordPage(id: RecordId, onPrevious: () => void, onNext: (
   section.innerHTML = `${recapHeader}<div class="recap-stage"><div class="record-content">
     <h2 class="record-heading"></h2><p class="record-month"></p>
     <p class="record-total" hidden><span class="opening-number record-number">0</span><span class="opening-unit record-unit"></span></p>
-    <p class="record-label" hidden></p><p class="record-note" hidden></p>
+    <p class="record-label" hidden></p><p class="record-yearly-total opening-secondary" hidden></p><p class="record-note" hidden></p>
     <p class="record-status" role="status">Preparing this record…</p>
     </div></div><footer class="record-footer"></footer>`;
   const backgroundWord = document.createElement('div');
@@ -41,10 +42,12 @@ export function createRecordPage(id: RecordId, onPrevious: () => void, onNext: (
   const number = section.querySelector<HTMLElement>('.record-number')!;
   const unit = section.querySelector<HTMLElement>('.record-unit')!;
   const label = section.querySelector<HTMLElement>('.record-label')!;
+  const yearlyTotal = section.querySelector<HTMLElement>('.record-yearly-total')!;
   const note = section.querySelector<HTMLElement>('.record-note')!;
   const status = section.querySelector<HTMLElement>('.record-status')!;
   const thumbnail = id === 'world-time' ? createWorldThumbnail() : undefined;
-  if (thumbnail) section.querySelector('.record-content')!.append(thumbnail.element);
+  const imagePermission = thumbnail ? createRecapImagePermission(section) : undefined;
+  if (thumbnail && imagePermission) section.querySelector('.record-content')!.append(imagePermission.element, thumbnail.element);
   const revealDurationMs = 2500;
   const numberRevealDelay = 1100;
   const streak = id === 'streak' ? createStreakTimeline({ revealDurationMs, onRevealStart: audio?.start, onRevealValue: audio?.update, onStreakSettled: audio?.settled, onRevealStop: audio?.finish }) : undefined;
@@ -84,7 +87,7 @@ export function createRecordPage(id: RecordId, onPrevious: () => void, onNext: (
     const finalValue = result.value;
     section.classList.add('is-revealing-record');
     number.textContent = '0';
-    for (const [element, delay] of [[heading, 0], [month, 500], [total, numberRevealDelay], [label, 1350], ...(thumbnail ? [[thumbnail.element, numberRevealDelay] as const] : [])] as const) {
+    for (const [element, delay] of [[heading, 0], [month, 500], [total, numberRevealDelay], [label, 1350], [yearlyTotal, 1500], ...(thumbnail ? [[thumbnail.element, numberRevealDelay] as const] : [])] as const) {
       if (element.hidden && element !== thumbnail?.element) continue;
       introAnimations.push(element.animate([
         { opacity: 0, transform: 'translateY(12px)' },
@@ -118,9 +121,12 @@ export function createRecordPage(id: RecordId, onPrevious: () => void, onNext: (
   const format = (value: number) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value);
   function paint() {
     total.hidden = !result || result.status !== 'ready';
+    yearlyTotal.textContent = result && (result.timeline || id === 'streak') ? recordYearlyDetail(result) : '';
+    yearlyTotal.hidden = !yearlyTotal.textContent;
     label.hidden = !result?.label;
     label.textContent = result?.label ?? '';
     thumbnail?.update(result?.status === 'ready' ? result : undefined);
+    imagePermission?.setAvailable(result?.status === 'ready' && !!(result.worldId || (result.imageUrl && permittedImage(result.imageUrl))));
     const explanation = id === 'streak' || result?.note?.includes('Showing the earliest') ? '' : result?.note ?? '';
     note.hidden = !explanation;
     note.textContent = explanation;

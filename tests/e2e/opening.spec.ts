@@ -1,4 +1,4 @@
-import { enterSite } from '../fixtures/startup';
+import { enterSite, dismissImageRecommendation } from '../fixtures/startup';
 import { test, expect } from '@playwright/test';
 import { databaseFixture } from '../fixtures/database';
 
@@ -12,6 +12,7 @@ test('Start opens the real recorded-time card offline and returns to the prepare
   const requests: string[] = [];
   page.on('request', request => requests.push(request.url()));
   await page.locator('.file-input').setInputFiles({ name: 'synthetic.sqlite3', mimeType: 'application/octet-stream', buffer: await databaseFixture('benchmark') });
+  await dismissImageRecommendation(page);
   await page.getByRole('button', { name: 'Start your rewind' }).click();
   await expect(page.locator('.slice-transition')).toHaveCount(0);
   await page.getByRole('button', { name: 'Next page', exact: true }).click();
@@ -49,6 +50,7 @@ test('unavailable history shows an honest empty state on mobile', async ({ page 
   await page.goto('/');
   await enterSite(page);
   await page.locator('.file-input').setInputFiles({ name: 'partial.sqlite3', mimeType: 'application/octet-stream', buffer: await databaseFixture() });
+  await dismissImageRecommendation(page);
   await page.getByRole('button', { name: 'Start your rewind' }).click();
   await expect(page.locator('.slice-transition')).toHaveCount(0);
   await page.getByRole('button', { name: 'Next page', exact: true }).click();
@@ -74,6 +76,7 @@ test('first visit plays tones, revisits stay finished and silent, and a new data
   await page.goto('/');
   await enterSite(page);
   await page.locator('.file-input').setInputFiles({ name: 'synthetic.sqlite3', mimeType: 'application/octet-stream', buffer: await databaseFixture('benchmark') });
+  await dismissImageRecommendation(page);
   await page.getByRole('button', { name: 'Start your rewind' }).click();
   await expect(page.locator('.slice-transition')).toHaveCount(0);
   await page.getByRole('button', { name: 'Next page', exact: true }).click();
@@ -99,6 +102,7 @@ test('first visit plays tones, revisits stay finished and silent, and a new data
   await expect(page.getByRole('button', { name: 'Start your rewind' })).toBeVisible();
   await page.getByRole('button', { name: 'Choose a new database' }).click();
   await page.locator('.file-input').setInputFiles({ name: 'new.sqlite3', mimeType: 'application/octet-stream', buffer: await databaseFixture('benchmark') });
+  await dismissImageRecommendation(page);
   await page.getByRole('button', { name: 'Start your rewind' }).click();
   await expect(page.locator('.slice-transition')).toHaveCount(0);
   await page.getByRole('button', { name: 'Next page', exact: true }).click();

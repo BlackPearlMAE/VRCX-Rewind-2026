@@ -5,6 +5,8 @@ import { recapHeader } from '../../components/recap-header';
 import { createPageProgress, recapPages } from '../../components/page-progress';
 import { addPageKeyboardNavigation } from '../../components/page-navigation';
 import { createFriendAvatar } from '../../components/friend-avatar';
+import { createRecapImagePermission } from '../../components/recap-image-permission';
+import { permittedImage } from '../../components/world-thumbnail';
 import type { createTimelineSynth } from '../../components/timeline-synth';
 import type { FriendsPageData, NewFriendEntry } from '../../data/friends-data';
 
@@ -24,7 +26,11 @@ export function createFriendsPage(onBack: () => void, onPrevious: () => void, on
       <div class="worlds-overview friends-overview"><p class="worlds-total"><span class="opening-number worlds-number friends-number">0</span><span class="worlds-unit">new friends made</span></p><p class="friends-count-note">First recorded additions this year.<br>Known re-adds are excluded.</p></div>
       <div class="worlds-list-group"><p class="worlds-list-label">Top 10 new friends by time together</p><p class="friends-ranking-status" role="status"></p><ol class="worlds-list friends-list"></ol><p class="friends-measurement">Estimated time in the same instance after becoming friends this year.</p></div>
     </div>
-
+    ${definition.id === 'mutuals' ? `<p class="friends-cache-help" hidden>
+      Open VRCX, select <strong>Charts</strong> in the left sidebar, then open <strong>Mutual Friend Network</strong>.
+      Click <strong>Fetch Again</strong> to refresh the cache, or <strong>Start Fetch</strong> if there’s no cache yet.
+      When VRCX finishes, re-import your database in Rewind.
+    </p>` : ''}
   </div></div><footer data-visualization="spectrum"></footer>`;
   section.prepend(createPageProgress(recapPages));
   const title = createTitle(definition.title, { shine: false, musicReactive: true }, 'h2');
@@ -51,8 +57,11 @@ export function createFriendsPage(onBack: () => void, onPrevious: () => void, on
     : definition.id === 'time' || definition.id === 'overlap' ? (data?.entries[0]?.seconds ?? 0) / 3600 : data?.total ?? 0;
   const list = section.querySelector<HTMLOListElement>('.friends-list')!;
   const status = section.querySelector<HTMLElement>('.friends-status')!;
+  const cacheHelp = section.querySelector<HTMLElement>('.friends-cache-help');
   const body = section.querySelector<HTMLElement>('.friends-body')!;
   const rankingStatus = section.querySelector<HTMLElement>('.friends-ranking-status')!;
+  const imagePermission = createRecapImagePermission(section);
+  section.querySelector('.friends-overview')!.append(imagePermission.element);
   let data: FriendsPageData | undefined;
   let seen = false, frame = 0;
   let avatars: ReturnType<typeof createFriendAvatar>[] = [];
@@ -126,6 +135,11 @@ export function createFriendsPage(onBack: () => void, onPrevious: () => void, on
       avatars.forEach(avatar => avatar.dispose()); avatars = []; rows = []; list.replaceChildren();
       const ready = value?.status === 'ready';
       body.hidden = !ready;
+      if (cacheHelp) cacheHelp.hidden = !value;
+      imagePermission.setAvailable(!!ready && (
+        value.entries.some(entry => entry.imageUrl && permittedImage(entry.imageUrl)) ||
+        (definition.id === 'boops' && !!value.boopImages?.some(image => permittedImage(image.url)))
+      ));
       if (highlightsPerson) {
         topPerson.textContent = value?.entries[0]?.name ?? '';
         dayEquivalent.hidden = definition.id === 'mutuals' || (definition.id === 'time' && headlineValue() <= 120);
@@ -136,7 +150,9 @@ export function createFriendsPage(onBack: () => void, onPrevious: () => void, on
       const demoLabel = section.querySelector<HTMLElement>('.friends-demo-label')!;
       demoLabel.hidden = !value || value.source === 'import';
       demoLabel.textContent = value?.source === 'recorded-aggregate' ? '· SAVED LOCAL DEMO' : '· SYNTHETIC DEMO';
-      status.textContent = !value ? 'Preparing your friends…' : !ready ? `${definition.title} could not be calculated from the retained history.` : '';
+      status.textContent = !value ? 'Preparing your friends…' : ready ? ''
+        : cacheHelp ? 'No saved mutual friends data could be read from this database.'
+        : `${definition.title} could not be calculated from the retained history.`;
       section.querySelector('.friends-count-note')!.textContent = definition.id === 'time' ? 'The person you spent the most time with this year.'
         : definition.id === 'overlap' ? ''
         : definition.id === 'mutuals' ? ''

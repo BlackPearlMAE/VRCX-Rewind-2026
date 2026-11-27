@@ -2,9 +2,10 @@
 .friends-heading h2 { margin: 0; font-family: Arial, Helvetica, sans-serif; font-weight: 900; font-style: italic; font-size: clamp(2.1875rem, 3vw, 3.75rem); line-height: 1.2; }
 .friends-demo-label { color: #f1bdf0; }
 .friends-demo-label[hidden], .friends-body[hidden] { display: none; }
-.friends-count-note, .friends-measurement { color: #a8c0bd; font-size: .9375rem; line-height: 1.5; }
+.friends-count-note, .friends-measurement, .friends-cache-help { color: #a8c0bd; font-size: .9375rem; line-height: 1.5; }
 .friends-count-note { margin: 1.5rem 0 0; }
 .friends-measurement { margin: 1rem 0 0; }
+.friends-cache-help { max-width: 52rem; margin: 0; text-wrap: pretty; }
 .friends-status, .friends-ranking-status { color: #c7d4d2; font-size: 1.125rem; line-height: 1.5; }
 .friends-status:empty, .friends-ranking-status:empty { display: none; }
 .friends-avatar { width: 3.25rem; height: 3.25rem; flex: 0 0 3.25rem; display: grid; place-items: center; overflow: hidden; border: 1px solid #ffffff24; border-radius: .5rem; background: #ffffff08; color: #b7cbc8; font-size: 1.0625rem; }
