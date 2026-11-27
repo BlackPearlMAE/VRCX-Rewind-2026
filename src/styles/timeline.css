@@ -1,0 +1,259 @@
+.timeline-lab { min-height: 100svh; display: flex; flex-direction: column; background: #292929; padding: 0 clamp(1rem, 3vw, 3.5rem); }
+.timeline-test-controls { align-self: flex-start; margin-top: 1.5rem; color: #aaa; font-size: .8rem; }
+.timeline-test-controls h2 { font-size: .9rem; font-weight: 400; color: #ddd; margin: 0 0 .8rem; }
+.timeline-test-controls > div { display: flex; flex-direction: column; gap: .8rem; }
+.timeline-test-controls label { display: flex; align-items: center; gap: .5rem; }.timeline-test-controls input { accent-color: #ccc; }
+.timeline-test-controls a { text-underline-offset: .2rem; }
+.timeline-lab-footer { margin-top: auto; padding-bottom: 1rem; }
+.monthly-timeline { position: relative; --timeline-height: 0px; }
+.monthly-timeline.has-values { --timeline-height: 230px; }
+.timeline-scroll { overflow-x: auto; overflow-y: hidden; padding: .75rem 1px 0; margin: 0 -1px; }
+.timeline-plot { position: relative; height: calc(var(--timeline-height) + 42px); min-width: 900px; }
+.timeline-axis { position: absolute; left: 0; right: 0; top: var(--timeline-height); height: 2px; background: #b8b8b8; box-shadow: 0 0 3px 1px #bcbcbc60; }
+.timeline-month-button { position: absolute; top: 0; height: 100%; padding: 0; background: transparent; border: 0; color: #ddd; cursor: pointer; }
+.timeline-month-button:focus-visible { outline: 1px solid #ccc; outline-offset: -2px; }
+.timeline-month-label { position: absolute; top: calc(var(--timeline-height) + 17px); left: 0; width: 100%; text-align: center; font-size: .75rem; font-weight: 400; }
+.timeline-month-tick, .timeline-end-tick { position: absolute; top: calc(var(--timeline-height) - 9px); width: 1px; height: 20px; background: #e3e3e3; z-index: 1; }
+.timeline-month-tick { left: 0; }.timeline-end-tick { right: 0; }
+.timeline-week-tick { position: absolute; top: calc(var(--timeline-height) - 3px); width: 1px; height: 8px; background: #9f9f9f; }
+.timeline-month-bar { display: none; position: absolute; bottom: 42px; left: 15%; right: 15%; background: #ffffff16; border: 1px solid #ffffff45; border-bottom: 0; }
+.has-values .timeline-month-bar { display: block; }
+.timeline-month-button:hover .timeline-month-bar, .timeline-month-button:focus .timeline-month-bar { background: #ffffff25; }
+.timeline-month-button[data-status="missing"] .timeline-month-bar { background: transparent; border-style: dashed; }
+.timeline-week-bars { position: absolute; top: 0; left: 0; right: 0; height: var(--timeline-height); pointer-events: none; }
+.timeline-week-bars[hidden] { display: none; }
+.timeline-week-button { position: absolute; bottom: 0; border: 0; border-left: 2px solid #292929; border-right: 2px solid #292929; background: #b7b7b7; min-height: 2px; padding: 0; cursor: pointer; pointer-events: auto; }
+.timeline-week-button:hover, .timeline-week-button:focus-visible { background: #eee; }
+.timeline-week-button:focus-visible { outline: 1px solid #fff; outline-offset: 1px; }
+.timeline-inspection { position: absolute; bottom: calc(100% + .7rem); left: 0; margin: 0; color: #ccc; font-size: .8rem; line-height: 1.5; pointer-events: none; }
+.timeline-inspection:empty { display: none; }
+@media (max-width: 760px) { .timeline-plot { min-width: 900px; }.monthly-timeline.has-values { --timeline-height: 180px; } }
+
+/* First, second and third months, with matching weekly detail. */
+.timeline-month-bar { border-radius: 6px 6px 0 0; }
+.timeline-week-button { border-radius: 4px 4px 0 0; }
+.monthly-timeline [data-rank="1"] { --rank-color: #dc70e6; }
+.monthly-timeline [data-rank="2"] { --rank-color: #55c8bc; }
+.monthly-timeline [data-rank="3"] { --rank-color: #b89bce; }
+.timeline-month-button:is([data-rank="1"], [data-rank="2"], [data-rank="3"]) .timeline-month-bar {
+  background: linear-gradient(to top, color-mix(in srgb, var(--rank-color) 16%, transparent), color-mix(in srgb, var(--rank-color) 44%, transparent));
+  border-color: color-mix(in srgb, var(--rank-color) 65%, transparent);
+}
+.has-values .timeline-month-button:is([data-rank="1"], [data-rank="2"], [data-rank="3"]) .timeline-month-label { color: var(--rank-color); }
+.timeline-week-button:is([data-rank="1"], [data-rank="2"], [data-rank="3"]) { background: var(--rank-color); }
+.timeline-month-button:hover .timeline-month-bar, .timeline-month-button:focus-visible .timeline-month-bar,
+.timeline-week-button:hover, .timeline-week-button:focus-visible { filter: brightness(1.15); }
+
+.timeline-month-value { position: absolute; top: .5rem; left: 0; right: 0; text-align: center; color: #f0f0f0; font-size: .85rem; line-height: 1.2; font-variant-numeric: tabular-nums; pointer-events: none; }
+.timeline-week-value { position: absolute; top: 3px; left: 0; right: 0; text-align: center; color: #202020; font-size: .75rem; line-height: 1.2; font-variant-numeric: tabular-nums; pointer-events: none; }
+.timeline-month-bar[data-short="true"] .timeline-month-value, .timeline-week-button[data-short="true"] .timeline-week-value { top: auto; bottom: calc(100% + 4px); color: #ddd; }
+.timeline-plot:has(.timeline-week-bars:not([hidden])) { min-width: 1100px; }
+
+.timeline-load-database, .timeline-cancel-load, .timeline-account { width: fit-content; max-width: min(30rem, 85vw); border: 1px solid #666; border-radius: .35rem; background: #333; color: #ddd; padding: .55rem .75rem; font: inherit; }
+.timeline-load-database, .timeline-cancel-load { cursor: pointer; }
+.timeline-account-label { flex-direction: column; align-items: start !important; }
+.timeline-account-label[hidden], .timeline-cancel-load[hidden] { display: none; }
+.timeline-load-status { max-width: min(32rem, 85vw); margin: 0; line-height: 1.5; }
+.timeline-load-status:empty { display: none; }
+
+/* Place labels sit below the number inside the three leading monthly bars. */
+.timeline-month-button[data-rank="1"] .timeline-month-bar::after { content: '1st'; }
+.timeline-month-button[data-rank="2"] .timeline-month-bar::after { content: '2nd'; }
+.timeline-month-button[data-rank="3"] .timeline-month-bar::after { content: '3rd'; }
+.timeline-month-button:is([data-rank="1"], [data-rank="2"], [data-rank="3"]) .timeline-month-bar::after {
+  position: absolute;
+  top: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: .15rem .4rem;
+  border: 1px solid color-mix(in srgb, var(--rank-color) 65%, transparent);
+  border-radius: .3rem;
+  background: #292929b3;
+  color: var(--rank-color);
+  font-size: .75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  pointer-events: none;
+}
+.timeline-month-button .timeline-month-bar[data-short="true"]::after { top: auto; bottom: calc(100% + 1.5rem); }
+
+/* Remaining places stay readable but much quieter than the top three. */
+.timeline-month-button:not([data-rank="0"]):not([data-rank="1"]):not([data-rank="2"]):not([data-rank="3"]) .timeline-month-bar::after {
+  content: attr(data-place);
+  position: absolute;
+  top: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: .15rem .4rem;
+  color: #858585;
+  font-size: .75rem;
+  font-weight: 400;
+  line-height: 1.2;
+  pointer-events: none;
+}
+.timeline-month-button .timeline-month-bar[data-short="true"]::after { top: auto; bottom: calc(100% + 1.5rem); }
+/* A small crown above every month sharing first place. */
+.timeline-month-button[data-rank="1"] .timeline-month-bar::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 18px;
+  background: #ffd166;
+  clip-path: polygon(0 15%, 27% 42%, 50% 0, 73% 42%, 100% 15%, 85% 78%, 15% 78%, 0 15%, 15% 78%, 15% 91%, 85% 91%, 85% 100%, 15% 100%, 15% 78%);
+  pointer-events: none;
+}
+/* Leave room for the crown above the tallest bar without moving the ruler. */
+.timeline-scroll { padding-top: 2rem; }
+
+
+/* Neon outlines for the three leading monthly bars. */
+.timeline-month-button:is([data-rank="1"], [data-rank="2"], [data-rank="3"]) .timeline-month-bar {
+  border-color: var(--rank-color);
+  box-shadow:
+    0 0 4px color-mix(in srgb, var(--rank-color) 80%, transparent),
+    0 0 12px color-mix(in srgb, var(--rank-color) 38%, transparent),
+    inset 0 0 7px color-mix(in srgb, var(--rank-color) 15%, transparent);
+}
+
+/* Weekly preview as a continuous line, with gaps for unavailable periods. */
+.timeline-week-line { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.timeline-week-line path { fill: none; stroke: #c8c8c8; stroke-width: 1.5px; stroke-linejoin: round; stroke-linecap: round; }
+.timeline-week-bars .timeline-week-button { width: 12px; height: 12px; min-height: 0; border: 2px solid #ccc; border-radius: 50%; padding: 0; background: #292929; transform: translate(-50%, 50%); color: #ddd; }
+.timeline-week-bars .timeline-week-button:is([data-rank="1"], [data-rank="2"], [data-rank="3"]) { border-color: var(--rank-color); background: #292929; }
+.timeline-week-bars .timeline-week-button:hover, .timeline-week-bars .timeline-week-button:focus-visible { background: #ddd; }
+.timeline-week-bars .timeline-week-button .timeline-week-value { top: auto; bottom: calc(100% + 5px); left: 50%; right: auto; transform: translateX(-50%); color: #ddd; font-size: .75rem; white-space: nowrap; }
+
+.timeline-week-line path:is([data-rank="1"], [data-rank="2"], [data-rank="3"]) { stroke: var(--rank-color); }
+
+/* Compensate for Questrial glyphs sitting high, preserving total badge padding. */
+.timeline-month-button:is([data-rank="1"], [data-rank="2"], [data-rank="3"]) .timeline-month-bar::after {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(.15rem + 1.5px) .4rem calc(.15rem - 1.5px);
+  line-height: 1.2;
+  text-align: center;
+}
+
+
+.timeline-replay { width: fit-content; border: 1px solid #666; border-radius: .35rem; background: #333; color: #ddd; padding: .55rem .75rem; font: inherit; cursor: pointer; }
+/* Each month reveals its ranking as soon as its own rise has finished. */
+.monthly-timeline.is-revealing .timeline-month-button:not([data-settled="true"]) .timeline-month-bar { background: #ffffff16; border-color: #ffffff45; box-shadow: none; }
+.monthly-timeline.is-revealing .timeline-month-button:not([data-settled="true"]) .timeline-month-bar::before,
+.monthly-timeline.is-revealing .timeline-month-button:not([data-settled="true"]) .timeline-month-bar::after { opacity: 0; }
+.monthly-timeline.is-revealing .timeline-month-button:not([data-settled="true"]) .timeline-month-label { color: #aaa; }
+
+.monthly-timeline.is-revealing .timeline-month-bar[data-reveal-label-visible="false"] .timeline-month-value { visibility: hidden; }
+
+/* Weekly detail fades in only once the monthly bars have finished. */
+.timeline-week-bars { opacity: 1; transition: opacity 600ms ease; }
+.monthly-timeline.is-revealing .timeline-week-bars { opacity: 0; transition: none; }
+@media (prefers-reduced-motion: reduce) { .timeline-week-bars { transition: none; } }
+
+/* Temporary recap total preview, driven by the same values as the rising monthly bars. */
+.timeline-total { position: absolute; top: 50svh; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
+.timeline-total[hidden] { display: none; }
+.timeline-total-caption { color: #bbb; font-size: clamp(.9rem, 1.2vw, 1.2rem); margin: 0 0 .7rem; white-space: nowrap; }
+.timeline-total-display { display: flex; align-items: baseline; justify-content: center; gap: .8rem; margin: 0; }
+.timeline-total-number { color: #f4f4f4; font-size: clamp(3.5rem, 7vw, 7rem); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.timeline-total-unit { color: #aaa; font-size: clamp(1rem, 1.5vw, 1.5rem); }
+@media (max-width: 760px) and (max-height: 650px) { .timeline-total { top: 47svh; left: auto; right: 1rem; transform: translateY(-50%); } .timeline-total-number { font-size: 2.5rem; } .timeline-total-caption { font-size: .75rem; } }
+/* Brief brighter glow when a top-three bar first reaches its final value. */
+@keyframes timeline-settle-glow {
+  from {
+    box-shadow:
+      0 0 8px color-mix(in srgb, var(--rank-color) 100%, transparent),
+      0 0 28px color-mix(in srgb, var(--rank-color) 75%, transparent),
+      inset 0 0 14px color-mix(in srgb, var(--rank-color) 35%, transparent);
+  }
+  to {
+    box-shadow:
+      0 0 4px color-mix(in srgb, var(--rank-color) 80%, transparent),
+      0 0 12px color-mix(in srgb, var(--rank-color) 38%, transparent),
+      inset 0 0 7px color-mix(in srgb, var(--rank-color) 15%, transparent);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .timeline-month-button:is([data-rank="1"], [data-rank="2"], [data-rank="3"])[data-settled="true"] .timeline-month-bar {
+    animation: timeline-settle-glow 1s ease-out;
+  }
+}
+
+.timeline-sound-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; }
+.timeline-sound-controls .timeline-sound-volume { width: 6rem; }
+.timeline-volume-value { min-width: 2.5rem; font-variant-numeric: tabular-nums; }
+.timeline-sound-status { max-width: min(28rem, 85vw); margin: 0; line-height: 1.4; }
+.timeline-sound-status:empty { display: none; }
+
+/* Design-only synth workbench. */
+.timeline-synth-panel { position: absolute; top: 1.5rem; right: clamp(1rem, 3vw, 3.5rem); width: 20rem; max-height: calc(100svh - 20rem); overflow-y: auto; padding: 1rem; border: 1px solid #555; border-radius: .4rem; background: #292929; color: #ccc; font-size: .8rem; }
+.timeline-synth-panel h2 { font-size: 1rem; font-weight: 400; color: #eee; margin: 0 0 .6rem; }
+.timeline-synth-panel > p { margin: 0 0 1rem; color: #aaa; line-height: 1.5; }
+.timeline-synth-panel fieldset { border: 0; padding: 0; margin: 0 0 1rem; min-width: 0; }
+.timeline-synth-panel legend { padding: 0; margin-bottom: .7rem; color: #eee; font-size: .875rem; }
+.synth-param { display: grid; gap: .35rem; margin-bottom: .65rem; }
+.synth-param-header { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; }
+.synth-param-value { color: #ddd; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.synth-param input { width: 100%; margin: 0; accent-color: #b89bce; }
+.synth-param select, .timeline-synth-panel button { font: inherit; color: #ddd; background: #333; border: 1px solid #666; border-radius: .3rem; padding: .4rem .6rem; }
+.timeline-synth-panel button { cursor: pointer; }
+@media (max-width: 1000px) {
+  .timeline-synth-panel { position: static; align-self: stretch; width: auto; max-height: none; overflow: visible; margin: 1.5rem 0; }
+  .timeline-lab .timeline-total { position: relative; top: auto; left: auto; right: auto; transform: none; margin: 1.5rem auto 3rem; }
+}
+
+.timeline-metric { border: 1px solid #666; border-radius: .35rem; background: #333; color: #ddd; padding: .4rem .6rem; font: inherit; }
+
+/* A continuous calendar for played-day streaks. */
+.streak-calendar { position: absolute; left: 0; right: 0; top: calc(var(--timeline-height) - 42px); height: 24px; display: grid; gap: 1px; align-items: center; }
+.streak-day { display: block; height: 6px; background: #ffffff18; border-radius: 2px; }
+.streak-day.is-in-streak { height: 18px; background: #67d9c9; box-shadow: 0 0 5px #00e5d066; opacity: 0; transition: opacity 300ms ease; }
+.has-streak .streak-day.is-in-streak { opacity: 1; }
+.streak-month-label { position: absolute; top: calc(var(--timeline-height) + 17px); text-align: center; color: #ccc; font-size: .75rem; }
+@media (prefers-reduced-motion: reduce) { .streak-day.is-in-streak { transition: none; } }
+
+/* Other recorded streaks remain visible without competing with the longest. */
+.streak-day.is-in-recorded-streak:not(.is-in-streak) { height: 13px; background: #85858d; opacity: .6; }
+.streak-timeline:not(.has-streak) .streak-day.is-in-recorded-streak { opacity: 0; }
+
+/* Each streak fills from its first recorded day to its last. */
+.streak-runs { position: absolute; left: 0; right: 0; top: calc(var(--timeline-height) - 42px); height: 24px; }
+.streak-run { position: absolute; top: 5px; height: 13px; }
+.streak-run-fill { display: grid; gap: 1px; width: 100%; height: 100%; }
+.streak-run-day { display: block; height: 100%; border-radius: 2px; background: #85858d; opacity: .6; }
+.streak-run.is-ranked-streak { top: 3px; height: 18px; }
+
+.streak-run-count { position: absolute; bottom: calc(100% + 6px + var(--streak-count-lane, 0) * 64px); left: 50%; transform: translateX(-50%); color: #aaa; font-size: .75rem; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.streak-timeline:not(.has-streak) .streak-runs { visibility: hidden; }
+
+/* Streak podiums use the same place colors and gold crown as monthly charts. */
+.streak-run.is-ranked-streak[data-settled="true"] .streak-run-day {
+  background: var(--rank-color); opacity: 1;
+  box-shadow: 0 0 5px color-mix(in srgb, var(--rank-color) 80%, transparent), 0 0 12px color-mix(in srgb, var(--rank-color) 38%, transparent);
+  animation: streak-settle-glow 1s ease-out;
+}
+.streak-run.is-ranked-streak[data-settled="true"] .streak-run-count { color: var(--rank-color); }
+.streak-run-place {
+  position: absolute; bottom: calc(100% + 24px + var(--streak-count-lane, 0) * 64px); left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; justify-content: center; min-width: 1.8rem;
+  padding: calc(.15rem + 1.5px) .4rem calc(.15rem - 1.5px);
+  border: 1px solid var(--rank-color); border-radius: 4px; background: #292929e6; color: var(--rank-color);
+  font-size: .75rem; line-height: 1.2; opacity: 0; transition: opacity 200ms ease;
+}
+.streak-run[data-settled="true"] .streak-run-place { opacity: 1; }
+.streak-run[data-rank="1"] .streak-run-place::before {
+  content: ''; position: absolute; bottom: calc(100% + 5px); left: 50%; transform: translateX(-50%);
+  width: 22px; height: 18px; background: #ffd166;
+  clip-path: polygon(0 15%, 27% 42%, 50% 0, 73% 42%, 100% 15%, 85% 78%, 15% 78%, 0 15%, 15% 78%, 15% 91%, 85% 91%, 85% 100%, 15% 100%, 15% 78%);
+}
+@keyframes streak-settle-glow {
+  from { filter: brightness(1.5); box-shadow: 0 0 8px var(--rank-color), 0 0 28px color-mix(in srgb, var(--rank-color) 75%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .streak-run.is-ranked-streak[data-settled="true"] .streak-run-day { animation: none; }
+  .streak-run-place { transition: none; }
+}

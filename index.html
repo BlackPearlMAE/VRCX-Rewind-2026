@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob: https://api.vrchat.cloud https://files.vrchat.cloud https://assets.vrchat.com https://d348imysud55la.cloudfront.net; font-src 'self'; media-src 'self' blob:; connect-src 'self' https://api.vrchat.cloud; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'" />
+    <link rel="stylesheet" href="/src/styles/main.css" />
+    <title>VRCX Rewind 2026</title>
+  </head>
+  <body class="is-starting">
+    <section class="startup" id="startup" aria-labelledby="startup-title" aria-busy="true">
+      <div class="startup-orbs" aria-hidden="true">
+        <span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span>
+      </div>
+      <div class="startup-frost" aria-hidden="true"></div>
+      <div class="startup-content">
+
+        <h1 id="startup-title">VRCX REWIND 2026</h1>
+        <div class="startup-actions">
+        <p class="startup-status" id="startup-status" role="status"><span class="startup-spinner" aria-hidden="true"></span><span>Loading assets for local use</span></p>
+        <div class="startup-bar" id="startup-bar" role="progressbar" aria-label="Loading assets for local use" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
+        <button class="journey-button startup-start" id="startup-start" type="button" hidden>Start</button>
+        </div>
+
+        <noscript><p>Enable JavaScript to open your rewind.</p></noscript>
+      </div>
+    </section>
+    <div id="app" inert></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,19 @@
+.capture-test { min-height:100svh; background:#181a20; padding:1.25rem; color:#eee; }
+.capture-lab-controls { max-width:1000px; margin:0 auto 1rem; }
+.capture-lab-controls h1 { font-size:1.5rem; margin:0 0 .5rem; }
+.capture-lab-controls p { font-size:1rem; line-height:1.45; margin:.5rem 0; }
+.capture-lab-actions { display:flex; flex-wrap:wrap; gap:.6rem; }
+.capture-lab-actions :is(button,a) { border:1px solid #76d9cb70; border-radius:.4rem; padding:.65rem .8rem; background:#30383b; color:#fff; cursor:pointer; font:inherit; text-decoration:none; }
+.capture-lab-actions button:disabled { opacity:.4;cursor:not-allowed; }
+.capture-lab-actions [hidden] { display:none; }
+.capture-lab-controls .capture-permission-note { font-size:.875rem;color:#adb6c3; }
+.capture-diagnostics { font: .8125rem/1.4 monospace; white-space:pre-wrap; margin:.5rem 0; height:5rem; overflow:auto; }
+.capture-target { width:min(70vw,calc((100svh - 310px)*.8)); min-width:100px; margin:0 auto; aspect-ratio:4 / 5; }
+.capture-target canvas { display:block;width:100%;height:100%; }
+.capture-result { max-width:640px;margin:2rem auto; }
+.capture-result[hidden] { display:none; }
+.capture-result img { width:100%;height:auto; }
+
+.capture-ready .capture-lab-controls > h1, .capture-ready .capture-lab-controls > p:first-of-type, .capture-ready .capture-permission-note { display:none; }
+.capture-debug { font-size:.875rem;color:#adb6c3; }
+.capture-debug summary { cursor:pointer; }

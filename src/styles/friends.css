@@ -1,0 +1,88 @@
+/* Friends share the established chapter frame; this first page combines a total and ten people. */
+.friends-heading h2 { margin: 0; font-family: Arial, Helvetica, sans-serif; font-weight: 900; font-style: italic; font-size: clamp(2.1875rem, 3vw, 3.75rem); line-height: 1.2; }
+.friends-demo-label { color: #f1bdf0; }
+.friends-demo-label[hidden], .friends-body[hidden] { display: none; }
+.friends-count-note, .friends-measurement { color: #a8c0bd; font-size: .9375rem; line-height: 1.5; }
+.friends-count-note { margin: 1.5rem 0 0; }
+.friends-measurement { margin: 1rem 0 0; }
+.friends-status, .friends-ranking-status { color: #c7d4d2; font-size: 1.125rem; line-height: 1.5; }
+.friends-status:empty, .friends-ranking-status:empty { display: none; }
+.friends-avatar { width: 3.25rem; height: 3.25rem; flex: 0 0 3.25rem; display: grid; place-items: center; overflow: hidden; border: 1px solid #ffffff24; border-radius: .5rem; background: #ffffff08; color: #b7cbc8; font-size: 1.0625rem; }
+.friends-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.friends-image-controls { margin-top: .5rem; }
+.friends-image-controls .image-permission-label { font-size: 1rem; }
+.friends-image-controls p { color: #8daba5; font-size: .8125rem; margin: .5rem 0 0; line-height: 1.4; }
+.friends-list .worlds-entry:nth-child(1) { --worlds-award-color: #efcc7c; }
+.friends-list .worlds-entry:nth-child(2) { --worlds-award-color: #c8ced8; }
+.friends-list .worlds-entry:nth-child(3) { --worlds-award-color: #cd9569; }
+.friends-list .worlds-entry:not([data-settled="true"]) .worlds-rank { color: #97afac; text-shadow: none; }
+.friends-list .worlds-entry:not([data-settled="true"]) .worlds-entry-bar::after { background: linear-gradient(90deg, #5db8b0aa, #c886c8aa); box-shadow: none; }
+.friends-list .worlds-entry:nth-child(-n+3)[data-settled="true"] :is(.worlds-rank, .worlds-value) { color: var(--worlds-award-color); }
+.friends-list .worlds-entry.is-awarded :is(.worlds-rank, .worlds-value), .friends-list .worlds-entry.is-awarded .worlds-entry-bar::after { animation: worlds-award-flash 650ms ease-out; }
+.friends-story .story-kicker, .friends-story .story-copy { font-size: clamp(1.875rem, 3.125vw, 3.75rem); }
+.friends-story .story-heading h2 { font-size: clamp(2.5rem, 4.375vw, 5.3125rem); }
+.story-disclaimer { max-width: 46rem; margin: 2.25rem 0 0; color: #bacac7; font-size: 1.125rem; line-height: 1.55; text-wrap: pretty; }
+@media (max-width: 760px) {
+  .friends-body { grid-template-columns: 1fr; gap: 2rem; }
+  .friends-page .friends-number { font-size: 6rem; }
+  .friends-page .worlds-entry { gap: .5rem; }
+  .friends-avatar { width: 2.5rem; height: 2.5rem; flex-basis: 2.5rem; }
+  .friends-page .worlds-name { font-size: 1rem; }
+  .friends-page .worlds-value { font-size: .9375rem; }
+  .story-disclaimer { font-size: 1rem; margin-top: 1.5rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .friends-list .worlds-entry.is-awarded :is(.worlds-rank, .worlds-value), .friends-list .worlds-entry.is-awarded .worlds-entry-bar::after { animation: none; }
+}
+
+/* Restore the roomy rows and large avatars, with the total farther into the left side. */
+.friends-body { display: grid; grid-template-columns: minmax(14rem, .55fr) minmax(0, 1.45fr); gap: 3.5rem; align-items: center; margin-left: -12vw; margin-right: -10vw; }
+.friends-body > .worlds-list-group { min-width: 0; }
+.friends-page .friends-overview .friends-number { font-size: clamp(4rem, var(--friends-number-size, 10vw), 12.5rem); }
+.friends-overview .worlds-unit { margin-top: 1rem; font-size: 1.75rem; }
+.friends-overview .friends-count-note { margin-top: 1.25rem; font-size: .9375rem; }
+.friends-list { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(5, auto); grid-auto-flow: column; column-gap: 2.5rem; gap: .75rem 2.5rem; }
+/* Keep the wider content clear of the invisible page-turn targets. */
+main:has(> .friends-page:not([hidden])) .recap-navigation .page-wing { width: 8vw; }
+@media (max-width: 760px) {
+  .friends-body { grid-template-columns: minmax(0, 1fr); gap: 2rem; margin-inline: 0; }
+  .friends-page .friends-overview .friends-number { font-size: 6rem; }
+  .friends-list { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-auto-flow: row; }
+}
+
+/* Use the available height above the waveform for larger friend portraits and names. */
+@media (min-width: 761px) and (min-height: 901px) {
+  .friends-list { row-gap: .875rem; }
+  .friends-page .friends-list .worlds-entry { min-height: 5.5rem; padding: .625rem 0 .875rem; }
+  .friends-list .friends-avatar { width: 4rem; height: 4rem; flex-basis: 4rem; font-size: 1.25rem; }
+  .friends-list .worlds-name { font-size: 1.375rem; }
+  .friends-list .worlds-value, .friends-list .worlds-rank { font-size: 1.25rem; }
+}
+
+.friends-entry-detail { display: block; margin-top: .25rem; color: #9ab7b1; font-size: .75rem; font-weight: 400; line-height: 1.25; }
+
+/* Rising boop images/emoji stay behind text and above the moving color field. */
+.boop-particles { position: absolute; inset: 6rem 0 9rem; z-index: 0; overflow: hidden; pointer-events: none; }
+.boop-particle { position: absolute; bottom: 0; display: block; width: 4.5rem; height: 4.5rem; font-size: 4rem; line-height: 1; text-align: center; will-change: transform, opacity; }
+.boop-particle img { width: 100%; height: 100%; object-fit: contain; }
+@media (prefers-reduced-motion: reduce) { .boop-particles { display: none; } }
+
+/* Highlight the leading person's time and its equivalent in 24-hour days. */
+.friends-top-person { max-width: 100%; margin-top: .625rem; color: #efcc7c; font-size: clamp(1.5rem, 2vw, 2.25rem); overflow-wrap: anywhere; }
+.friends-day-equivalent { margin: 1rem 0 0; color: #efcc7c; font-size: 1.25rem; line-height: 1.4; }
+.friends-day-equivalent[hidden], .friends-overview[hidden] { display: none; }
+
+.friends-entry-days { display: block; margin-top: .25rem; font-size: .8125rem; line-height: 1.25; text-align: right; opacity: .8; }
+
+/* Anchor chapter headings to the same left edge as the overview and rankings. */
+@media (min-width: 761px) {
+  .friends-content > .worlds-heading-row { margin-left: -12vw; margin-right: -10vw; }
+}
+
+/* Compare the leading person's overlap/shared connections with the user's total. */
+.friends-comparison { max-width: 26rem; margin: .75rem auto 0; color: #c4dedb; font-size: clamp(1rem, 1.6dvh, 1.25rem); line-height: 1.5; text-wrap: pretty; }
+.friends-comparison[hidden] { display: none; }
+
+
+/* Separate the overlap headline from its person and comparison details. */
+.friends-page[data-friends="overlap"] .friends-overview .worlds-unit { margin-top: clamp(1.5rem, 3dvh, 2.5rem); }
