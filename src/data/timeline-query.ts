@@ -80,47 +80,44 @@ export function calculateTimeline(db: Database, account: string, now = Date.now(
   return { topic: 'Estimated recorded time', year, unit: 'hours', timeZone, months, weeks };
 }
 
-/** First retained friendship per person, not re-adds. Only counts leave the worker. */
-export function calculateFriendsTimeline(db: Database, account: string, now = Date.now()): TimelineData {
+export interface FriendTimelinePerson { userId: string; first: number | null; added: number | null }
+
+/** Retain one coverage date and one first friendship date per person. */
+export function readFriendsTimelinePeople(db: Database, account: string): FriendTimelinePerson[] {
   if (!accountPrefixes(db).includes(account)) throw new Error('Choose an account');
   const uuid = account.slice(3);
   const selfId = `usr_${uuid.slice(0,8)}-${uuid.slice(8,12)}-${uuid.slice(12,16)}-${uuid.slice(16,20)}-${uuid.slice(20)}`;
-  const year = 2026, timeZone = 'Europe/Berlin';
-  const cutoff = Math.min(now, calendarMidnight(year + 1, 0, 1, timeZone));
-  const weeks: TimelineWeek[] = [];
-  const entries: string[] = [];
-  const parameters: Record<string, string | number> = { ':self_id': selfId };
-  for (let month = 0; month < 12; month++) for (const segment of [0, 1, 2, 3] as const) {
-    const index = weeks.length;
-    const start = calendarMidnight(year, month, segment * 7 + 1, timeZone);
-    const end = segment === 3 ? calendarMidnight(year, month + 1, 1, timeZone) : calendarMidnight(year, month, (segment + 1) * 7 + 1, timeZone);
-    weeks.push({ month, segment, start: new Date(start).toISOString(), end: new Date(end).toISOString(), value: null });
-    entries.push(`(${month}, ${segment}, :start_${index}, :end_${index})`);
-    parameters[`:start_${index}`] = start / 1000;
-    parameters[`:end_${index}`] = Math.min(end, cutoff) / 1000;
-  }
-  const statement = db.prepare(`WITH first_transitions AS (
-    SELECT user_id, created_at, type,
-      ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at, id) AS rn
+  const statement = db.prepare(`WITH transitions AS (
+    SELECT user_id, type, unixepoch(created_at) AS at_s,
+      MIN(unixepoch(created_at)) OVER (PARTITION BY user_id) AS first_s,
+      ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at, id) AS position
     FROM "${account}_friend_log_history"
-    WHERE type IN ('Friend', 'Unfriend') AND user_id GLOB 'usr_*' AND user_id <> :self_id
-  ), coverage AS (SELECT MIN(unixepoch(created_at)) AS first_s FROM first_transitions),
-  buckets(month, segment, start_s, end_s) AS (VALUES ${entries.join(', ')}),
-  new_friends AS (SELECT unixepoch(created_at) AS added_s FROM first_transitions WHERE rn = 1 AND type = 'Friend')
-  SELECT b.month, b.segment, COUNT(f.added_s), c.first_s
-  FROM buckets b CROSS JOIN coverage c
-  LEFT JOIN new_friends f ON f.added_s >= b.start_s AND f.added_s < b.end_s
-  GROUP BY b.month, b.segment ORDER BY b.month, b.segment`);
-  let first = Infinity;
+    WHERE type IN ('Friend','Unfriend') AND user_id GLOB 'usr_*' AND user_id <> :self_id
+  ) SELECT user_id, first_s, CASE WHEN type = 'Friend' THEN at_s END FROM transitions WHERE position = 1`);
+  const people: FriendTimelinePerson[] = [];
   try {
-    statement.bind(parameters);
+    statement.bind({ ':self_id': selfId });
     while (statement.step()) {
-      const row = statement.get();
-      if (row[3] !== null) first = Number(row[3]) * 1000;
-      const week = weeks[Number(row[0]) * 4 + Number(row[1])]!;
-      if (Date.parse(week.start) < cutoff && Date.parse(week.end) > first) week.value = Number(row[2]);
+      const [id, first, added] = statement.get();
+      people.push({ userId: String(id), first: first === null ? null : Number(first) * 1000, added: added === null ? null : Number(added) * 1000 });
     }
   } finally { statement.free(); }
+  return people;
+}
+
+export function friendsTimelineFromPeople(people: readonly FriendTimelinePerson[], now: number): TimelineData {
+  const year = 2026, timeZone = 'Europe/Berlin';
+  const cutoff = Math.min(now, calendarMidnight(year + 1, 0, 1, timeZone));
+  const first = people.reduce((earliest, person) => Math.min(earliest, person.first ?? Infinity), Infinity);
+  const weeks: TimelineWeek[] = [];
+  for (let month = 0; month < 12; month++) for (const segment of [0, 1, 2, 3] as const) {
+    const start = calendarMidnight(year, month, segment * 7 + 1, timeZone);
+    const end = segment === 3 ? calendarMidnight(year, month + 1, 1, timeZone) : calendarMidnight(year, month, (segment + 1) * 7 + 1, timeZone);
+    const through = Math.min(end, cutoff);
+    const value = start < cutoff && end > first
+      ? people.reduce((total, person) => total + Number(person.added !== null && person.added >= start && person.added < through), 0) : null;
+    weeks.push({ month, segment, start: new Date(start).toISOString(), end: new Date(end).toISOString(), value });
+  }
   const months: TimelineMonth[] = Array.from({ length: 12 }, (_, month) => {
     const start = calendarMidnight(year, month, 1, timeZone), end = calendarMidnight(year, month + 1, 1, timeZone);
     if (start >= cutoff) return { value: null, status: 'future' };
@@ -129,4 +126,9 @@ export function calculateFriendsTimeline(db: Database, account: string, now = Da
     return { value: sections.reduce((sum, week) => sum + (week.value ?? 0), 0), partial: first > start || cutoff < end };
   });
   return { topic: 'Friends added', year, unit: 'friends', timeZone, months, weeks };
+}
+
+/** First retained friendship per person, not re-adds. Only counts leave the worker. */
+export function calculateFriendsTimeline(db: Database, account: string, now = Date.now()): TimelineData {
+  return friendsTimelineFromPeople(readFriendsTimelinePeople(db, account), now);
 }

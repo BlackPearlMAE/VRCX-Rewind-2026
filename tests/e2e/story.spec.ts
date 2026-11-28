@@ -18,7 +18,7 @@ test('story precedes the data and one sound control mutes music and timeline', a
   const storyArrow = (await page.getByRole('button', { name: 'Previous page', exact: true }).locator('svg').boundingBox())!;
   expect(storyArrow.y + storyArrow.height / 2).toBeCloseTo(page.viewportSize()!.height / 2, 0);
   await expect(page.locator('.story-navigation-hint')).toContainText('Space');
-  await expect(page.locator('.story-navigation-hint')).not.toContainText('Click the arrows');
+  await expect(page.locator('.story-navigation-hint')).toContainText('Click or tap the side panels to navigate.');
   await expect(page.getByRole('button', { name: 'Previous page', exact: true })).toBeDisabled();
   await expect(page.locator('.recap-chrome [aria-current="step"]')).toHaveAttribute('aria-label', 'Your story');
   await page.screenshot({ path: 'test-results/story-desktop.png' });

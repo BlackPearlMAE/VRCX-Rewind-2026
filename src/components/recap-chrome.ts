@@ -112,8 +112,8 @@ export function createRecapChrome(host: HTMLElement, pages: readonly HTMLElement
         const timeline = page.querySelector<HTMLElement>('.monthly-timeline');
         if (timeline) { timeline.inert = page !== activePages[index]; timeline.setAttribute('aria-hidden', String(page !== activePages[index])); }
       });
-      const userPagesStart = activePages.findIndex(page => page.classList.contains('friends-story') || page.classList.contains('friends-page'));
-      const showExclusions = userPagesStart >= 0 && index >= userPagesStart;
+      const exclusionsStart = activePages.findIndex(page => page.matches('.worlds-story, .worlds-page, .friends-story, .friends-page'));
+      const showExclusions = exclusionsStart >= 0 && index >= exclusionsStart;
       header.dataset.showExclusions = String(showExclusions);
       if (!showExclusions) host.querySelector<HTMLElement>('.recap-exclusions-dropdown:popover-open')?.hidePopover();
       // Editing controls can use the full width; invisible recap wings must not cover them.

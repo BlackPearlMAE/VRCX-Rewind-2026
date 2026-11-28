@@ -21,6 +21,7 @@ export interface WorldsPageData {
   total: number;
   uniqueWorlds?: number;
   entries: WorldEntry[];
+  reserve?: WorldEntry;
   timeline?: TimelineData;
   breakdown?: { label: string; value: number }[];
   detail?: string;

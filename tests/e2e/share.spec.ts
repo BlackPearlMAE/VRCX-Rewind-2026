@@ -19,6 +19,8 @@ test('share cards export offline, show friend details by default, and use local 
   await expect(canvas).toHaveAttribute('aria-label', /YOUR YEAR/);
   for (const kind of ['Worlds', 'Friends', 'Your stats']) {
     await page.getByRole('button', { name: kind, exact: true }).click();
+    await expect(canvas).toHaveAttribute('aria-label', /\. 1\. .+\. 2\. .+\. 3\./);
+    await expect(canvas).not.toHaveAttribute('aria-label', /\. 0[123]\. /);
     await canvas.screenshot({path:`test-results/share-base-${kind.replaceAll(' ','-')}.png`});
     const downloaded = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Download PNG', exact: true }).click();
@@ -225,7 +227,7 @@ for(const {merged,cors} of [{merged:true,cors:true},{merged:false,cors:true},{me
     await expect(canvas).toHaveAttribute('aria-label',new RegExp(`DISCOVERED THIS YEAR.*World ${merged?'A':'B'}.*Most time spent · ${merged?'3':'2'} h`));
     expect(requests).toHaveLength(cors ? 6 : 10);expect(new Set(requests).size).toBe(5);
     if(cors) {
-    const pixels=await canvas.evaluate((c:HTMLCanvasElement)=>{const x=c.getContext('2d')!;return {left:Array.from(x.getImageData(100,550,1,1).data),right:Array.from(x.getImageData(600,550,1,1).data),circle:Array.from(x.getImageData(127,857,1,1).data),corner:Array.from(x.getImageData(96,848,1,1).data)};});
+    const pixels=await canvas.evaluate((c:HTMLCanvasElement)=>{const x=c.getContext('2d')!;return {left:Array.from(x.getImageData(100,550,1,1).data),right:Array.from(x.getImageData(600,550,1,1).data),circle:Array.from(x.getImageData(154,875,1,1).data),corner:Array.from(x.getImageData(127,848,1,1).data)};});
     if(merged) {expect(pixels.left[0]).toBeGreaterThan(pixels.left[2]!);expect(pixels.circle.slice(0,3)).toEqual([32,80,224]);}
     else {expect(pixels.left[2]).toBeGreaterThan(pixels.left[0]!);expect(pixels.right[0]).toBeGreaterThan(pixels.right[2]!);expect(pixels.circle.slice(0,3)).toEqual([224,64,32]);}
     expect(pixels.corner).not.toEqual(pixels.circle);
@@ -326,7 +328,7 @@ test('Friends highlights show details by default and load thumbnails only with i
   await expect(page.locator('.share-download')).toBeVisible();
   expect(await canvas.evaluate((c:HTMLCanvasElement)=>Array.from(c.getContext('2d')!.getImageData(100,550,1,1).data))).toEqual([237,32,64,255]);
   expect(await canvas.evaluate((c:HTMLCanvasElement)=>Array.from(c.getContext('2d')!.getImageData(600,550,1,1).data))).toEqual([237,32,64,255]);
-  expect(await canvas.evaluate((c:HTMLCanvasElement)=>Array.from(c.getContext('2d')!.getImageData(127,857,1,1).data))).toEqual([32,80,224,255]);
+  expect(await canvas.evaluate((c:HTMLCanvasElement)=>Array.from(c.getContext('2d')!.getImageData(140,857,1,1).data))).toEqual([32,80,224,255]);
   await expect(page.locator('.share-missing-pictures')).toBeHidden();
   await expect(page.locator('.share-friend-picture-row')).toHaveCount(0);
   await page.locator('.share-load-avatars').evaluate((input:HTMLInputElement)=>{input.checked=false;input.dispatchEvent(new Event('change',{bubbles:true}));});
@@ -403,7 +405,7 @@ test('Your Stats focuses on hours and includes the requested metrics and highlig
   const canvas=page.locator('.share-card-canvas');
   await expect(canvas).toHaveAttribute('aria-label',/617\. hours played/);
   await expect(canvas).toHaveAttribute('aria-label',/longest streak.*days played.*25\. full days of playtime.*recorded sessions/);
-  await expect(canvas).toHaveAttribute('aria-label',/TIME TOGETHER.*01.*MossCloud.*77 h.*02.*JuniperGlow.*03.*MossRipple.*NEW FRIENDS BY TIME.*01.*CloverDrift.*02.*CloverRipple.*03.*NimbusBloom.*TIME IN WORLDS.*01.*Ritual.*59 h.*02.*03/);
+  await expect(canvas).toHaveAttribute('aria-label',/TIME TOGETHER\. 1\. MossCloud.*77 h\. 2\. JuniperGlow.*\. 3\. MossRipple.*NEW FRIENDS BY TIME\. 1\. CloverDrift.*\. 2\. CloverRipple.*\. 3\. NimbusBloom.*TIME IN WORLDS\. 1\. Ritual.*59 h\. 2\. .*\. 3\./);
   await expect(canvas).toHaveAttribute('aria-label',/33\. friends made.*533\. instances visited.*51\. worlds discovered/);
   await expect(canvas).not.toHaveAttribute('aria-label',/of the year played|avatars uploaded|YOUR YEAR IN HOURS|161,3/);
   await expect(page.locator('.share-friend-picture-row')).toHaveCount(6);

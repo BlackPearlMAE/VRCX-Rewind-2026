@@ -3,7 +3,7 @@
 The project owner's decision to leave their code unlicensed does not alter any third-party rights or terms.
 
 - sql.js 1.16.0 is distributed under its MIT license. The runtime bundle includes [its license](../public/licenses/sql.js-LICENSE.txt) and [authors list](../public/licenses/sql.js-AUTHORS.txt).
-- Questrial font files are bundled through @fontsource/questrial. Their [SIL Open Font License](../public/licenses/questrial-OFL.txt) is included. The retained [Inter font notice](../public/licenses/inter-OFL.txt) is also supplied.
+- Questrial font files are bundled through @fontsource/questrial. Their [SIL Open Font License](../public/licenses/questrial-OFL.txt) is included. Inter Black Italic is bundled as a Firefox heading fallback. Its [SIL Open Font License](../public/licenses/inter-OFL.txt) is included.
 - [Vite's license and bundled dependency notices](../public/licenses/vite-LICENSE.txt) are retained with the production assets. Build/test dependencies retain their upstream licenses and are installed from the package lockfile.
 - The soundtrack credits are HOME - Above All, EVA - 失望した, and AIRGLOW - New Touch. Their source links are shown in the site's Music credits. Copyright and redistribution terms remain with the respective rightsholders; a credit is not itself a permission grant. The supplied credits and license links are recorded below and beside the MP3s in [CREDITS.txt](../public/audio/CREDITS.txt).
 - VRChat world and avatar artwork remains with its respective rightsholders. The bundled lookup contains image references rather than artwork bytes; pictures are requested directly only after opt-in.

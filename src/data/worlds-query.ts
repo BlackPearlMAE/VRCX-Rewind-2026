@@ -23,6 +23,7 @@ export function calculateWorlds(db: Database, account: string, now = Date.now())
     } finally { statement.free(); }
   }
   const result = unavailableWorlds();
+  const limits: Record<WorldsId, number> = { discoveries: 5, visits: 10, time: 10, owned: 5 };
   function safe(id: WorldsId, calculate: () => Omit<WorldsPageData, 'id' | 'status'>) {
     try { result[result.findIndex(page => page.id === id)] = { ...calculate(), id, status: 'ready' }; }
     catch { /* An absent optional table leaves this topic unavailable, never falsely zero. */ }
@@ -50,18 +51,18 @@ export function calculateWorlds(db: Database, account: string, now = Date.now())
         COALESCE(SUM(MAX(0,v.end_s-MAX(v.start_s,d.at_s))),0)/3600.0 AS value
       FROM discoveries d LEFT JOIN visits v ON v.world_id=d.world_id AND v.end_s>d.at_s
       LEFT JOIN cache_world w ON w.id=d.world_id
-      GROUP BY d.world_id ORDER BY value DESC,d.world_id LIMIT 5;`);
-    return { total, entries: entries(rows), detail: `Top ${rows.length} new worlds by hours since discovery` };
+      GROUP BY d.world_id ORDER BY value DESC,d.world_id LIMIT ${limits.discoveries + 1};`);
+    return { total, entries: entries(rows), detail: `Top ${Math.min(rows.length, limits.discoveries)} new worlds by hours since discovery` };
   });
   safe('visits', () => {
     const base = `WITH visits AS (${validVisits})`;
-    const rows = query(base + ` SELECT v.world_id,${name} AS world_name,COUNT(*) AS value FROM visits v LEFT JOIN cache_world w ON w.id=v.world_id GROUP BY v.world_id ORDER BY value DESC,v.world_id LIMIT 10;`);
+    const rows = query(base + ` SELECT v.world_id,${name} AS world_name,COUNT(*) AS value FROM visits v LEFT JOIN cache_world w ON w.id=v.world_id GROUP BY v.world_id ORDER BY value DESC,v.world_id LIMIT ${limits.visits + 1};`);
     const counts=query(base + ' SELECT COUNT(*) AS total,COUNT(DISTINCT world_id) AS unique_worlds FROM visits;')[0]!;
     const total=Number(counts.total),uniqueWorlds=Number(counts.unique_worlds);
     return { total, uniqueWorlds, entries: entries(rows), detail: 'Ranked by visits' };
   });
   safe('time', () => {
-    const rows = query(visits + ` SELECT v.world_id,${name} AS world_name,SUM(v.end_s-v.start_s)/3600.0 AS value FROM visits v LEFT JOIN cache_world w ON w.id=v.world_id WHERE v.world_id GLOB 'wrld_*' GROUP BY v.world_id ORDER BY value DESC,v.world_id LIMIT 10;`);
+    const rows = query(visits + ` SELECT v.world_id,${name} AS world_name,SUM(v.end_s-v.start_s)/3600.0 AS value FROM visits v LEFT JOIN cache_world w ON w.id=v.world_id WHERE v.world_id GLOB 'wrld_*' GROUP BY v.world_id ORDER BY value DESC,v.world_id LIMIT ${limits.time + 1};`);
     const total = Number(query(visits + " SELECT COALESCE(SUM(end_s-start_s),0)/3600.0 AS total FROM visits WHERE world_id GLOB 'wrld_*';")[0]!.total);
     return { total, entries: entries(rows), detail: 'Ranked by estimated time' };
   });
@@ -77,7 +78,7 @@ export function calculateWorlds(db: Database, account: string, now = Date.now())
     ), owned AS (SELECT * FROM first_instances WHERE access IS NOT NULL AND at_s>=unixepoch(:from_utc,'subsec') AND at_s<unixepoch(:to_utc,'subsec'))`;
     const breakdownRows = query(owned + ' SELECT access,COUNT(*) AS value FROM owned GROUP BY access;');
     const breakdown = ['Friends', 'Friends+', 'Invite', 'Invite+'].map(label => ({ label, value: Number(breakdownRows.find(row => row.access === label)?.value ?? 0) }));
-    const rows = query(owned + ` SELECT v.world_id,${name} AS world_name,COUNT(*) AS value FROM owned v LEFT JOIN cache_world w ON w.id=v.world_id GROUP BY v.world_id ORDER BY value DESC,v.world_id LIMIT 5;`);
+    const rows = query(owned + ` SELECT v.world_id,${name} AS world_name,COUNT(*) AS value FROM owned v LEFT JOIN cache_world w ON w.id=v.world_id GROUP BY v.world_id ORDER BY value DESC,v.world_id LIMIT ${limits.owned + 1};`);
     return { total: breakdown.reduce((sum, item) => sum + item.value, 0), entries: entries(rows), breakdown, detail: 'Dated by first recorded visit, not confirmed creation.' };
   });
   // Optional cached artwork also covers worlds absent from the bundled lookup.
@@ -95,5 +96,8 @@ export function calculateWorlds(db: Database, account: string, now = Date.now())
       }
     } finally { statement.free(); }
   } catch { /* Older caches still use the bundled lookup. */ }
+  for (const page of result) {
+    if (page.entries.length > limits[page.id]) page.reserve = page.entries.pop();
+  }
   return result;
 }

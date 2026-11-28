@@ -1,6 +1,6 @@
 # Database compatibility
 
-The supported VRCX database migration version is **18**. This is the value of `config:vrcx_databaseversion` in `configs`, not a SQLite engine version or a VRCX application release number. Compatibility was rechecked by the project owner before this release; an unknown newer migration requires an updated build.
+Rewind supports VRCX database migration versions **17 and 18**. The migration version is stored in `configs` under `config:vrcx_databaseversion`. Both versions use the same activity schema checks. Version 18 adds bio-link columns that Rewind does not read. For versions older than 17, update VRCX and restart it if needed to let the database finish updating. A newer migration requires an updated Rewind build.
 
 Selection checks the SQLite header, recognized activity tables, the migration marker and required activity columns. It uses bundled sql.js 1.16.0 in a browser worker, with `query_only` enabled and `trusted_schema` disabled. It does not enumerate unrelated configuration values or run a full integrity scan. Validation is not a guarantee that every topic has complete history.
 

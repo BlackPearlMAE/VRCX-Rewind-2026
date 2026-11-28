@@ -28,13 +28,19 @@ function load(url: string) {
   cached.set(url, promise);
   return promise;
 }
-/** Session-only, explicit opt-in; no profile API, retries or substitute images. */
-export function createFriendAvatar(name: string, imageUrl?: string) {
+export function createFriendAvatarIcon(name: string) {
   const element = document.createElement('span');
   element.className = 'friends-avatar';
   element.setAttribute('aria-hidden', 'true');
   const initials = name.trim().split(/\s+/).slice(0, 2).map(word => Array.from(word)[0] ?? '').join('').toUpperCase() || '?';
   element.textContent = initials;
+  return element;
+}
+
+/** Session-only, explicit opt-in; no profile API, retries or substitute images. */
+export function createFriendAvatar(name: string, imageUrl?: string) {
+  const element = createFriendAvatarIcon(name);
+  const initials = element.textContent!;
   let visible = false, revision = 0;
   async function refresh() {
     const token = ++revision;

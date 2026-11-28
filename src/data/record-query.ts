@@ -7,7 +7,7 @@ import { calculateFriendsTimeline } from './timeline-query';
 import { monthlyRecord, unavailableRecords, type RecordPageData, type RecordId } from './record-pages';
 
 /** Aggregate all nine candidate layouts independently. Eligibility is intentionally deferred. */
-export function calculateRecordPages(db: Database, account: string, now = Date.now()): RecordPageData[] {
+export function calculateRecordPages(db: Database, account: string, now = Date.now(), friendTimeline?: TimelineData): RecordPageData[] {
   if (!accountPrefixes(db).includes(account)) throw new Error('Choose an account');
   const year = 2026, timeZone = 'Europe/Berlin' as const;
   const from = calendarMidnight(year, 0, 1, timeZone);
@@ -188,7 +188,7 @@ export function calculateRecordPages(db: Database, account: string, now = Date.n
     });
   }
   counts('discoveries', 'Worlds first discovered', 'worlds', "SELECT world_id AS item,MIN(unixepoch(created_at,'subsec')) AS at_s FROM gamelog_location WHERE location GLOB 'wrld_*:*' AND world_id GLOB 'wrld_*' GROUP BY world_id");
-  safe('friends', () => monthlyRecord('friends', calculateFriendsTimeline(db, account, now)));
+  safe('friends', () => monthlyRecord('friends', friendTimeline ?? calculateFriendsTimeline(db, account, now)));
   counts('instances', 'Different instances visited', 'instances', "SELECT location AS item,unixepoch(created_at,'subsec') AS at_s FROM gamelog_location WHERE location GLOB 'wrld_*:*'", 'COUNT(DISTINCT e.item)');
   counts('worlds', 'Different worlds visited', 'worlds', "SELECT world_id AS item,unixepoch(created_at,'subsec') AS at_s FROM gamelog_location WHERE location GLOB 'wrld_*:*' AND world_id GLOB 'wrld_*'", 'COUNT(DISTINCT e.item)');
   counts('avatars', 'Cached avatar uploads', 'avatars', "SELECT id AS item,unixepoch(created_at,'subsec') AS at_s FROM cache_avatar WHERE author_id=:self_id AND id GLOB 'avtr_*'", 'COUNT(DISTINCT e.item)');

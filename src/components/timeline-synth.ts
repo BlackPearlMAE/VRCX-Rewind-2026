@@ -27,8 +27,16 @@ export function createTimelineSynth() {
   function fade(voice: Voice, release = .05) {
     if (!context) return;
     const now = context.currentTime;
-    voice.gain.gain.cancelAndHoldAtTime(now);
-    voice.gain.gain.setTargetAtTime(.0001, now, release / 5);
+    const gain = voice.gain.gain;
+    if (typeof gain.cancelAndHoldAtTime === 'function') {
+      gain.cancelAndHoldAtTime(now);
+    } else {
+      // Firefox lacks cancelAndHoldAtTime. Start the fade from the current gain.
+      const currentGain = gain.value;
+      gain.cancelScheduledValues(now);
+      gain.setValueAtTime(currentGain, now);
+    }
+    gain.setTargetAtTime(.0001, now, release / 5);
     try { voice.oscillator.stop(now + release); } catch { /* Already ended. */ }
   }
   function stop() {

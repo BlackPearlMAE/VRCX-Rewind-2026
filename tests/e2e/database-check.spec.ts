@@ -86,7 +86,7 @@ for (const width of [1920, 390]) {
   });
 }
 for (const [kind, message] of [
-  ['old-version', 'database needs an update'],
+  ['old-version', 'You may need to restart VRCX after the update'],
   ['future-version', 'newer VRCX database version'],
   ['missing-version', 'version is missing or invalid'],
   ['invalid-version', 'version is missing or invalid'],

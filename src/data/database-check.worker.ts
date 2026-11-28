@@ -1,12 +1,12 @@
 import { ownShareProfile } from './own-avatar-query';
-import { withPersonExclusions } from './person-exclusions';
-import { calculateFriendsChapter, unavailableFriendsChapter } from './friends-chapter-query';
+import { prepareFriendRankings } from './friend-ranking-cache';
+import { unavailableFriendsChapter } from './friends-chapter-query';
 import { calculateWorlds } from './worlds-query';
 import { unavailableWorlds } from './worlds-data';
 import { calculateFriendImages, type FriendImageResult } from './friend-image-query';
 import { calculateRecordPages } from './record-query';
-import { unavailableRecords } from './record-pages';
-import { calculateSessionCount, calculateTimeline, calculateFriendsTimeline, type TimelineLoadResult, type TimelineMetric } from './timeline-query';
+import { monthlyRecord, unavailableRecords } from './record-pages';
+import { calculateSessionCount, calculateTimeline, calculateFriendsTimeline, friendsTimelineFromPeople, readFriendsTimelinePeople, type FriendTimelinePerson, type TimelineLoadResult, type TimelineMetric } from './timeline-query';
 import { accountPrefixes } from './database-accounts';
 import initSqlJs, { type Database, type SqlJsStatic } from 'sql.js';
 import type { DatabaseCheck } from './database-check';
@@ -15,8 +15,10 @@ const required: Record<string, string[]> = {
   gamelog_location: ['id', 'created_at', 'location', 'world_id', 'world_name', 'time'],
   cache_world: ['id', 'name'],
 };
-// Verified against VRCX v2026.11.14, src/stores/vrcx.js and src/services/config.js.
-const supportedDatabaseVersion = 18;
+// VRCX v2026.09.16 and v2026.11.14 share the activity tables Rewind reads.
+const minimumDatabaseVersion = 17;
+const maximumDatabaseVersion = 18;
+const supportedDatabaseVersions = `${minimumDatabaseVersion} and ${maximumDatabaseVersion}`;
 const markers = ['gamelog_location', 'gamelog_join_leave', 'gamelog_event', 'cache_world'];
 let initializeEngine: ((wasm?: ArrayBuffer) => void) | undefined;
 const engine = new Promise<SqlJsStatic>((resolve, reject) => {
@@ -28,9 +30,25 @@ const engine = new Promise<SqlJsStatic>((resolve, reject) => {
 void engine.then(() => self.postMessage({ type: 'ready', ok: true }), () => self.postMessage({ type: 'ready', ok: false }));
 
 let retainedDb: Database | undefined;
+interface AccountRecap {
+  account: string;
+  now: number;
+  history?: FriendTimelinePerson[];
+  friends?: ReturnType<typeof prepareFriendRankings>;
+  records?: ReturnType<typeof calculateRecordPages>;
+}
+let retainedAccount: AccountRecap | undefined;
+
+function accountRecap(db: Database, account: string): AccountRecap {
+  if (retainedAccount?.account === account) return retainedAccount;
+  const recap: AccountRecap = { account, now: Date.now() };
+  try { recap.history = readFriendsTimelinePeople(db, account); } catch { /* Optional history. */ }
+  retainedAccount = recap;
+  return recap;
+}
 
 async function check(file: File): Promise<DatabaseCheck> {
-  retainedDb?.close(); retainedDb = undefined;
+  retainedDb?.close(); retainedDb = undefined; retainedAccount = undefined;
   if (!file.size) return { ok: false, message: 'This file is empty. Choose your VRCX.sqlite3 database.' };
   let bytes: Uint8Array | undefined;
   let db: Database | undefined;
@@ -50,8 +68,8 @@ async function check(file: File): Promise<DatabaseCheck> {
       return { ok: false, message: 'The VRCX database version is missing or invalid. Open this database in the current VRCX release, then close VRCX and select it again.' };
     }
     const databaseVersion = Number(storedVersion);
-    if (databaseVersion < supportedDatabaseVersion) return { ok: false, message: `This VRCX database needs an update. Open it in the current VRCX release, let it finish updating, then close VRCX and select it again. This build supports database version ${supportedDatabaseVersion}.` };
-    if (databaseVersion > supportedDatabaseVersion) return { ok: false, message: `This database uses a newer VRCX database version than this Rewind build supports. Use an updated Rewind build. Supported database version: ${supportedDatabaseVersion}.` };
+    if (databaseVersion < minimumDatabaseVersion) return { ok: false, message: `This VRCX database needs an update. Open it in the current VRCX release and let the update finish. You may need to restart VRCX after the update for the database to refresh fully. Then close VRCX and select the database again. This build supports database versions ${supportedDatabaseVersions}.` };
+    if (databaseVersion > maximumDatabaseVersion) return { ok: false, message: `This database uses a newer VRCX database version than this Rewind build supports. Use an updated Rewind build. Supported database versions are ${supportedDatabaseVersions}.` };
     for (const [table, columns] of Object.entries(required)) {
       if (!names.has(table)) return { ok: false, message: 'This VRCX database layout is not supported by this build. Required activity tables are missing.' };
       // Names are fixed application constants, never file-provided SQL identifiers.
@@ -93,7 +111,10 @@ self.onmessage = (event: MessageEvent<{ id: number; file: File; type?: string; a
       let friends;
       try {
         if (!retainedDb) throw new Error('Database not loaded');
-        friends = calculateFriendsChapter(withPersonExclusions(retainedDb, event.data.account ?? '', event.data.excluded), event.data.account ?? '');
+        const account = event.data.account ?? '';
+        const recap = accountRecap(retainedDb, account);
+        recap.friends ??= prepareFriendRankings(retainedDb, account, recap.now, recap.history);
+        friends = recap.friends(event.data.excluded);
       } catch { friends = unavailableFriendsChapter(); }
       self.postMessage({ type: 'friends', id, friends });
       return;
@@ -111,7 +132,15 @@ self.onmessage = (event: MessageEvent<{ id: number; file: File; type?: string; a
       let records;
       try {
         if (!retainedDb) throw new Error('Database not loaded');
-        records = calculateRecordPages(withPersonExclusions(retainedDb, event.data.account ?? '', event.data.excluded), event.data.account ?? '');
+        const account = event.data.account ?? '';
+        const recap = accountRecap(retainedDb, account);
+        recap.records ??= calculateRecordPages(retainedDb, account, recap.now, recap.history && friendsTimelineFromPeople(recap.history, recap.now));
+        const excluded = new Set(event.data.excluded);
+        if (excluded.size && recap.history) {
+          const members = recap.history.filter(person => !excluded.has(person.userId));
+          const friends = monthlyRecord('friends', friendsTimelineFromPeople(members, recap.now));
+          records = recap.records.map(record => record.id === 'friends' ? friends : record);
+        } else records = recap.records;
       } catch { records = unavailableRecords('Records could not be calculated from this database.'); }
       self.postMessage({ type: 'records', id, records });
       return;

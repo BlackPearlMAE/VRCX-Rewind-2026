@@ -226,7 +226,7 @@
 .streak-run-day { display: block; height: 100%; border-radius: 2px; background: #85858d; opacity: .6; }
 .streak-run.is-ranked-streak { top: 3px; height: 18px; }
 
-.streak-run-count { position: absolute; bottom: calc(100% + 6px + var(--streak-count-lane, 0) * 64px); left: 50%; transform: translateX(-50%); color: #aaa; font-size: .75rem; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.streak-run-count { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); text-align: center; color: #aaa; font-size: .75rem; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 .streak-timeline:not(.has-streak) .streak-runs { visibility: hidden; }
 
@@ -238,7 +238,7 @@
 }
 .streak-run.is-ranked-streak[data-settled="true"] .streak-run-count { color: var(--rank-color); }
 .streak-run-place {
-  position: absolute; bottom: calc(100% + 24px + var(--streak-count-lane, 0) * 64px); left: 50%; transform: translateX(-50%);
+  position: absolute; bottom: calc(100% + 24px); left: 50%; transform: translateX(-50%);
   display: flex; align-items: center; justify-content: center; min-width: 1.8rem;
   padding: calc(.15rem + 1.5px) .4rem calc(.15rem - 1.5px);
   border: 1px solid var(--rank-color); border-radius: 4px; background: #292929e6; color: var(--rank-color);

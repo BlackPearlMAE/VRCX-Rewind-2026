@@ -21,29 +21,76 @@ async function observeWorker(page: import('@playwright/test').Page) {
   });
 }
 
-test('prepares only recap data offline and reuses it when the recap is reopened', async ({ page, context }) => {
-  await observeWorker(page);
+for (const version of [17, 18] as const) {
+  test(`prepares a v${version} recap offline and reuses it when reopened`, async ({ page, context }) => {
+    await observeWorker(page);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/'); await enterSite(page);
+    await context.setOffline(true);
+    const requests: string[] = []; page.on('request', r => requests.push(r.url()));
+    await page.locator('.file-input').setInputFiles({ name: `synthetic-v${version}.sqlite3`, mimeType: 'application/octet-stream', buffer: await databaseFixture('benchmark', version) });
+    await dismissImageRecommendation(page);
+    const stages = ['timeline', 'records', 'worlds', 'friends'];
+    await expect.poll(() => page.evaluate(() => (window as any).__databaseReplies.filter((type: string) => ['timeline', 'records', 'worlds', 'friends'].includes(type)))).toEqual(stages);
+    await expect(page.locator('.sql-benchmark, .benchmark-cancel, .preparation-status')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Start your rewind', exact: true }).click();
+    await page.getByRole('button', { name: 'Go to Share', exact: true }).click();
+    await expect(page.locator('.share-card-canvas')).toHaveAttribute('aria-label', /1\. hours played/);
+    await page.getByRole('button', { name: 'Back to start', exact: true }).click();
+    await page.getByRole('button', { name: 'Start your rewind', exact: true }).click();
+    await page.getByRole('button', { name: 'Go to Share', exact: true }).click();
+    await expect(page.locator('.share-card-canvas')).toHaveAttribute('aria-label', /1\. hours played/);
+    const messages: string[] = await page.evaluate(() => (window as any).__databaseMessages);
+    expect(messages.filter(type => stages.includes(type))).toEqual(stages);
+    expect(messages).not.toContain('benchmark');
+    expect(messages).not.toContain('cached-result');
+    expect(requests).toEqual([]);
+  });
+}
+
+test('an early start shows one loading card until the ordered records are ready', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/'); await enterSite(page);
-  await context.setOffline(true);
-  const requests: string[] = []; page.on('request', r => requests.push(r.url()));
-  await page.locator('.file-input').setInputFiles({ name: 'synthetic.sqlite3', mimeType: 'application/octet-stream', buffer: await databaseFixture('benchmark') });
+  await page.addInitScript(() => {
+    let holding = true;
+    const pending: (() => void)[] = [];
+    const NativeWorker = window.Worker;
+    window.Worker = class extends NativeWorker {
+      constructor(url: string | URL, options?: WorkerOptions) {
+        super(url, options);
+        this.addEventListener('message', event => {
+          if (!holding || event.data.type !== 'records') return;
+          event.stopImmediatePropagation();
+          pending.push(() => this.dispatchEvent(new MessageEvent('message', { data: event.data })));
+        });
+      }
+    };
+    Object.assign(window, { releaseRecords: () => {
+      holding = false;
+      pending.splice(0).forEach(reply => reply());
+    } });
+  });
+  await page.goto('/');
+  await enterSite(page);
+  await page.locator('.file-input').setInputFiles({ name: 'pending.sqlite3', mimeType: 'application/octet-stream', buffer: await databaseFixture('benchmark') });
   await dismissImageRecommendation(page);
-  const stages = ['timeline', 'records', 'worlds', 'friends'];
-  await expect.poll(() => page.evaluate(() => (window as any).__databaseReplies.filter((type: string) => ['timeline', 'records', 'worlds', 'friends'].includes(type)))).toEqual(stages);
-  await expect(page.locator('.sql-benchmark, .benchmark-cancel, .preparation-status')).toHaveCount(0);
   await page.getByRole('button', { name: 'Start your rewind', exact: true }).click();
-  await page.getByRole('button', { name: 'Go to Share', exact: true }).click();
-  await expect(page.locator('.share-card-canvas')).toHaveAttribute('aria-label', /1\. hours played/);
-  await page.getByRole('button', { name: 'Back to start', exact: true }).click();
-  await page.getByRole('button', { name: 'Start your rewind', exact: true }).click();
-  await page.getByRole('button', { name: 'Go to Share', exact: true }).click();
-  await expect(page.locator('.share-card-canvas')).toHaveAttribute('aria-label', /1\. hours played/);
-  const messages: string[] = await page.evaluate(() => (window as any).__databaseMessages);
-  expect(messages.filter(type => stages.includes(type))).toEqual(stages);
-  expect(messages).not.toContain('benchmark');
-  expect(messages).not.toContain('cached-result');
-  expect(requests).toEqual([]);
+  await page.getByRole('button', { name: 'Go to Your records', exact: true }).click();
+  const next = page.getByRole('button', { name: 'Next page', exact: true });
+  const loadingNav = page.getByRole('button', { name: 'Go to Loading records', exact: true });
+  const loading = page.getByRole('heading', { name: 'Your records are loading', exact: true });
+  await expect(loadingNav).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Go to Most recorded time in VRChat', exact: true })).toHaveCount(0);
+  await next.click();
+  await expect(loading).toBeVisible();
+  await next.click();
+  await expect(page.getByRole('heading', { name: 'The worlds you explored', exact: true })).toBeVisible();
+  await loadingNav.click();
+  await expect(loading).toBeVisible();
+  await page.evaluate(() => (window as Window & { releaseRecords: () => void }).releaseRecords());
+  await expect(loadingNav).toHaveCount(0);
+  await expect(loading).toBeHidden();
+  await expect(page.locator('[data-record=time]')).toBeFocused();
+  await expect(page.locator('[data-record=time] .record-number')).toHaveText('1');
 });
 
 test('the worker returns unavailable history and clears an earlier database without diagnostic APIs', async ({ page }) => {
@@ -175,4 +222,46 @@ test('account selection and switching work offline with account-specific Friends
     await page.getByRole('button', { name: 'Back to start', exact: true }).click();
   }
   expect(requests).toEqual([]);
+});
+
+test('excluding an imported friend refills the ranking and updates the new-friends record', async ({ page, context }) => {
+  const SQL = await initSqlJs();
+  const db = new SQL.Database(await databaseFixture('benchmark'));
+  const account = 'usr' + '1'.repeat(32);
+  for (let i = 1; i <= 11; i++) {
+    const id = 'usr_sample_' + i;
+    const name = 'Friend ' + i;
+    db.run(`INSERT INTO "${account}_friend_log_current" VALUES (?, ?)`, [id, name]);
+    db.run(`INSERT INTO "${account}_friend_log_history" VALUES (?, ?, ?, ?)`, [i, id, 'Friend', '2026-04-01T12:00:00Z']);
+    db.run('INSERT INTO gamelog_join_leave VALUES (?, ?, ?, ?, ?, ?, ?)', [i + 1, id, name, '2026-04-18T05:30:00.000Z', 'wrld_test:1', 'OnPlayerLeft', i * 60000]);
+  }
+  const buffer = Buffer.from(db.export());
+  db.close();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/');
+  await enterSite(page);
+  await context.setOffline(true);
+  await page.locator('.file-input').setInputFiles({ name: 'friends.sqlite3', mimeType: 'application/octet-stream', buffer });
+  await dismissImageRecommendation(page);
+  await page.getByRole('button', { name: 'Start your rewind', exact: true }).click();
+  const friends = page.locator('[data-friends=added]');
+  const record = page.locator('[data-record=friends]');
+  const goToFriends = page.getByRole('button', { name: 'Go to New friends made', exact: true });
+  const goToRecord = page.getByRole('button', { name: 'Go to Most new friends added', exact: true });
+  await goToFriends.click();
+  await expect(friends.locator('.friends-number')).toHaveText('11');
+  await expect(friends.locator('.worlds-name').last()).toHaveText('Friend 2');
+  await friends.getByRole('button', { name: 'Exclude Friend 11 from this recap', exact: true }).click();
+  await expect(friends.locator('.friends-number')).toHaveText('10');
+  await expect(friends.locator('.worlds-name').last()).toHaveText('Friend 1');
+  await goToRecord.click();
+  await expect(record.locator('.record-number')).toHaveText('10');
+  await goToFriends.click();
+  await page.getByRole('button', { name: 'Excluded users (1)', exact: true }).click();
+  await page.getByRole('button', { name: 'Remove Friend 11 from exclusions', exact: true }).click();
+  await expect(friends.locator('.friends-number')).toHaveText('11');
+  await expect(friends.locator('.worlds-name').first()).toHaveText('Friend 11');
+  await page.keyboard.press('Escape');
+  await goToRecord.click();
+  await expect(record.locator('.record-number')).toHaveText('11');
 });

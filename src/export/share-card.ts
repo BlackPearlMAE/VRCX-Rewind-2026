@@ -1,3 +1,4 @@
+import { drawWorldIcon } from '../components/world-icon';
 import type { FriendsPageData, NewFriendEntry } from '../data/friends-data';
 import type { WorldsPageData, WorldEntry } from '../data/worlds-data';
 import type { RecordPageData } from '../data/record-pages';
@@ -12,6 +13,7 @@ export interface ShareCardData {
 }
 export interface ShareFriendRegion { userId: string; name: string; x: number; y: number; width: number; height: number; circle: boolean }
 export interface ShareCardOptions { onFriendRegion?: (region: ShareFriendRegion) => void; name: string; picture?: HTMLImageElement; friendNames: boolean; gradientColor?: string; shadowColor?: string; worldImages?: ReadonlyMap<string, HTMLImageElement>; friendImages?: ReadonlyMap<string, HTMLImageElement> }
+const podiumColors = ['#f6cc68', '#d6dce7', '#e4a678'];
 const number = (value: number | undefined, digits = 0) => value === undefined || !Number.isFinite(value) ? '—' : value.toLocaleString('de-DE', { maximumFractionDigits: digits });
 const sum = (values: readonly { value: number | null }[] | undefined) => values?.some(v => v.value !== null) ? values.reduce((n,v) => n + (v.value ?? 0), 0) : undefined;
 
@@ -46,6 +48,20 @@ export function drawShareCard(canvas: HTMLCanvasElement, kind: ShareCardKind, da
     while (c.measureText(fitted).width > max && fitted.length > 1) fitted = fitted.slice(0,-1);
     if (fitted !== value) fitted = fitted.slice(0,-1) + '…';
     c.fillText(fitted, x, y); spoken.push(value);
+    c.restore();
+  }
+  function rankNumber(rank: number, x: number, y: number, size: number) {
+    c.save();
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    text(String(rank), x, y, size, podiumColors[rank - 1] ?? '#aeb3bc', '700');
+    c.restore();
+  }
+  function winnerRank(right: number) {
+    c.save();
+    c.fillStyle = '#000000e6';
+    c.fillRect(right - 50, 443, 40, 36);
+    rankNumber(1, right - 30, 461, 34);
     c.restore();
   }
   let frostedBackground: HTMLCanvasElement | undefined;
@@ -92,13 +108,6 @@ export function drawShareCard(canvas: HTMLCanvasElement, kind: ShareCardKind, da
       text(label,x,418,26,'#c4c6cc','400',labelWidth+1,'Questrial, Arial, sans-serif');
       c.restore();
     });
-  }
-  function worldGlyph(x: number,y: number,width: number,height: number) {
-    const cx=x+width/2,cy=y+height/2,radius=Math.min(width,height)*.24;
-    c.save();c.strokeStyle='#ffffff30';c.lineWidth=Math.max(1.2,Math.min(2.5,radius/20));
-    c.beginPath();c.arc(cx,cy,radius,0,Math.PI*2);c.stroke();
-    c.beginPath();c.ellipse(cx,cy,radius*.48,radius,0,0,Math.PI*2);c.stroke();
-    c.beginPath();c.moveTo(cx-radius,cy);c.lineTo(cx+radius,cy);c.stroke();c.restore();
   }
   c.fillStyle = '#24252b'; c.fillRect(-outerMargin,-outerMargin,canvas.width,canvas.height);
   const glow = c.createRadialGradient(1020,cardHeight-90,0,1020,cardHeight-90,1000);
@@ -202,7 +211,7 @@ export function drawShareCard(canvas: HTMLCanvasElement, kind: ShareCardKind, da
       } else if(entry?.userId) {
         c.fillStyle='#ffffff25';c.beginPath();c.arc(x+size/2,y+size*.35,size*.16,0,Math.PI*2);c.fill();
         c.beginPath();c.ellipse(x+size/2,y+size*.9,size*.32,size*.29,0,Math.PI,Math.PI*2);c.fill();
-      } else worldGlyph(x,y,size,size);
+      } else drawWorldIcon(c, x, y, size, size);
       c.restore();
     }
     function ranking(title:string,x:number,y:number,rows:readonly {name:string;userId?:string;worldId?:string;detail:string}[],ready:boolean) {
@@ -211,8 +220,8 @@ export function drawShareCard(canvas: HTMLCanvasElement, kind: ShareCardKind, da
       if(!rows.length)text(ready ? 'None recorded' : 'Not available',x+20,y+105,25,'#b4b5bf','400',424);
       rows.slice(0,3).forEach((entry,index)=>{
         const rowY=y+62+index*78;
-        portrait(entry,x+20,rowY,60);
-        text(String(index+1).padStart(2,'0'),x+96,rowY+20,17,'#aeb3bc','700',28);
+        rankNumber(index + 1, x + 30, rowY + 30, 24);
+        portrait(entry, x + 48, rowY, 60);
         text(entry.userId && !options.friendNames ? `Friend #${index+1}` : entry.name,x+136,rowY+23,25,'#fff','700',308);
         text(entry.userId && !options.friendNames ? 'Name and details hidden' : entry.detail,x+136,rowY+53,23,'#b9bec7','400',308);
       });
@@ -225,10 +234,10 @@ export function drawShareCard(canvas: HTMLCanvasElement, kind: ShareCardKind, da
     ranking('MOST TIME SPENT',64,1200,w('time')?.entries.slice(0,3).map(entry=>({...entry,detail:`${number(entry.value)} h`})) ?? [],!!w('time'));
     ranking('MOST VISITED',552,1200,w('visits')?.entries.slice(0,3).map(entry=>({...entry,detail:`${number(entry.value)} visits`})) ?? [],!!w('visits'));
     frostedPanel(64,1530,952,105);
-    const discovery=w('discoveries')?.entries[0];
+    const discovered=w('discoveries'), discovery=discovered?.entries[0];
     portrait(discovery,84,1550,64);
     text('DISCOVERED THIS YEAR · MOST TIME SPENT',170,1566,19,accent,'700',820);
-    text(discovery ? `${discovery.name} · ${number(discovery.value)} h` : w('discoveries') ? 'No newly discovered worlds recorded' : 'Discovery history unavailable',170,1606,27,'#fff','700',820);
+    text(discovery ? `${discovery.name} · ${number(discovery.value)} h` : discovered ? discovered.total ? 'No worlds left in this ranking' : 'No newly discovered worlds recorded' : 'Discovery history unavailable',170,1606,27,'#fff','700',820);
 
     text('THE PEOPLE IN YOUR YEAR',64,1690,30,accent,'700',952);
     sectionTotals([[f('added')?.total,'new friends'],[f('time')?.total,'friends spent time with']],1733);
@@ -273,13 +282,13 @@ export function drawShareCard(canvas: HTMLCanvasElement, kind: ShareCardKind, da
       } else {
         const shade=c.createLinearGradient(x,y,x+width,y+height);shade.addColorStop(0,'#373944');shade.addColorStop(1,gradientColor);
         c.fillStyle=shade;c.fillRect(x,y,width,height);
-        worldGlyph(x,y,width,height);
+        drawWorldIcon(c, x, y, width, height);
       }
       c.restore();
     }
-    function winner(entry: WorldEntry | undefined,x: number,width: number,category: string,values: string) {
+    function winner(entry: WorldEntry | undefined,x: number,width: number,category: string,values: string,hasRecordedWorlds = false) {
       artwork(entry,x,430,width,330);
-      const title=entry?.name ?? 'No recorded world';
+      const title=entry?.name ?? (hasRecordedWorlds ? 'No worlds left in this ranking' : 'No recorded world');
       const titleSize=merged ? 42 : 31, valueSize=merged ? 38 : 33;
       const maxText=width-48;
       function fittedWidth(value: string,size: number) {
@@ -299,14 +308,15 @@ export function drawShareCard(canvas: HTMLCanvasElement, kind: ShareCardKind, da
       textBackdrop(title,titleSize,674);
       textBackdrop(values,valueSize,724);
       text(category,x+24,471,26,'#fff','700',maxText);
+      if (entry) winnerRank(x + width);
       text(title,x+24,674,titleSize,'#fff','700',maxText);
       text(values,x+24,724,valueSize,accent,'700',maxText);
       c.restore();
     }
     if(merged) winner(timeWinner,64,952,'MOST TIME SPENT · MOST VISITED',`${number(timeWinner!.value)} h  ·  ${number(visitWinner!.value)} visits`);
     else {
-      winner(timeWinner,64,464,'MOST TIME SPENT',timeWinner ? `${number(timeWinner.value)} h` : 'Not available');
-      winner(visitWinner,552,464,'MOST VISITED',visitWinner ? `${number(visitWinner.value)} visits` : 'Not available');
+      winner(timeWinner,64,464,'MOST TIME SPENT',timeWinner ? `${number(timeWinner.value)} h` : time?.total ? '—' : 'Not available', !!time?.total);
+      winner(visitWinner,552,464,'MOST VISITED',visitWinner ? `${number(visitWinner.value)} visits` : visits?.total ? '—' : 'Not available', !!visits?.total);
     }
     function worldRanking(title: string,rows: readonly WorldEntry[],x: number,unit: string,ready: boolean) {
       frostedPanel(x-16,784,482,370);
@@ -315,8 +325,8 @@ export function drawShareCard(canvas: HTMLCanvasElement, kind: ShareCardKind, da
       if(rows.length<2)text(ready ? 'No other worlds recorded' : 'Not available',contentX,878,24,'#b4b5bf','400',414);
       rows.slice(1,5).forEach((entry,index)=>{
         const y=858+index*73;
-        artwork(entry,contentX,y,54,54,true);
-        text(String(index+2).padStart(2,'0'),contentX+70,y+19,19,'#aeb3bc','700',30);
+        rankNumber(index + 2, contentX + 12, y + 27, 26);
+        artwork(entry, contentX + 31, y, 54, 54, true);
         text(entry.name,contentX+108,y+20,24,'#fff','400',306);
         text(`${number(entry.value)} ${unit==='visits' && entry.value===1 ? 'visit' : unit}`,contentX+108,y+49,26,'#b9bec7','400',306);
       });
@@ -331,7 +341,7 @@ export function drawShareCard(canvas: HTMLCanvasElement, kind: ShareCardKind, da
       text(discoveryWinner.name,208,1268,32,'#fff','700',796);
       text(`Most time spent · ${number(discoveryWinner.value)} h`,208,1305,26,'#c4c6cc','400',796,'Questrial, Arial, sans-serif');
     } else {
-      text(discovery ? 'No newly discovered worlds recorded' : 'Discovery history unavailable',208,1275,27,'#c4c6cc','400',796);
+      text(discovery ? discovery.total ? 'No worlds left in this ranking' : 'No newly discovered worlds recorded' : 'Discovery history unavailable',208,1275,27,'#c4c6cc','400',796);
     }
     c.restore();c.restore();
   } else if (kind === 'friends') {
@@ -373,6 +383,7 @@ export function drawShareCard(canvas: HTMLCanvasElement, kind: ShareCardKind, da
         text(value,x+24,baseline,size,color,'700',width-48);
       }
       caption(category,471,merged ? 26 : 22,'#fff');
+      if (entry) winnerRank(x + width);
       caption(name,674,merged ? 42 : 31,'#fff');
       caption(value,724,merged ? 38 : 28,accent);
     }
@@ -387,8 +398,8 @@ export function drawShareCard(canvas: HTMLCanvasElement, kind: ShareCardKind, da
       if(rows.length<2)text(ready ? 'No other friends recorded' : 'Not available',x+12,878,24,'#b4b5bf','400',414);
       rows.slice(1,5).forEach((entry,index)=>{
         const y=844+index*58;
-        friendArtwork(entry,x+16,y,46,46,true);
-        text(String(index+2).padStart(2,'0'),x+82,y+17,18,'#aeb3bc','700',30);
+        rankNumber(index + 2, x + 24, y + 23, 25);
+        friendArtwork(entry, x + 43, y, 46, 46, true);
         text(options.friendNames ? entry.name : `Friend #${index+2}`,x+120,y+18,23,'#fff','400',306);
         text(options.friendNames ? `${number(entry.seconds/3600)} h` : 'Name and hours hidden',x+120,y+43,options.friendNames ? 23 : 19,'#b9bec7','400',306);
       });
@@ -442,21 +453,23 @@ export function drawShareCard(canvas: HTMLCanvasElement, kind: ShareCardKind, da
       if(!rows.length)text(ready ? 'None recorded' : 'Not available',x+16,1150,23,'#b4b5bf','400',width-32);
       rows.slice(0,3).forEach((entry,index)=>{
         const y=1120+index*68;
-        if(people && entry.userId)friendRegion({userId:entry.userId,name:entry.name},x+16,y+4,40,40,true);
-        c.save();c.beginPath();c.arc(x+36,y+24,20,0,Math.PI*2);c.clip();
-        c.fillStyle='#ffffff0b';c.fillRect(x+16,y+4,40,40);
+        const iconX = x + 38, iconY = y + 4, iconSize = 40;
+        const iconCenterX = iconX + iconSize / 2, iconCenterY = iconY + iconSize / 2;
+        rankNumber(index + 1, x + 22, iconCenterY, 23);
+        if(people && entry.userId)friendRegion({userId:entry.userId,name:entry.name},iconX,iconY,iconSize,iconSize,true);
+        c.save();c.beginPath();c.arc(iconCenterX,iconCenterY,iconSize/2,0,Math.PI*2);c.clip();
+        c.fillStyle='#ffffff0b';c.fillRect(iconX,iconY,iconSize,iconSize);
         const image=entry.image;
         if(image) {
           const side=Math.min(image.naturalWidth,image.naturalHeight);
-          c.drawImage(image,(image.naturalWidth-side)/2,(image.naturalHeight-side)/2,side,side,x+16,y+4,40,40);
+          c.drawImage(image,(image.naturalWidth-side)/2,(image.naturalHeight-side)/2,side,side,iconX,iconY,iconSize,iconSize);
         } else if(people) {
-          c.fillStyle='#ffffff18';c.beginPath();c.arc(x+36,y+18,7,0,Math.PI*2);c.fill();
-          c.beginPath();c.ellipse(x+36,y+43,16,14,0,Math.PI,Math.PI*2);c.fill();
+          c.fillStyle='#ffffff18';c.beginPath();c.arc(iconCenterX,iconY+14,7,0,Math.PI*2);c.fill();
+          c.beginPath();c.ellipse(iconCenterX,iconY+39,16,14,0,Math.PI,Math.PI*2);c.fill();
         } else {
-          worldGlyph(x+16,y+4,40,40);
+          drawWorldIcon(c, iconX, iconY, iconSize, iconSize);
         }
         c.restore();
-        text(String(index+1).padStart(2,'0'),x+64,y+18,16,'#aeb3bc','700',24);
         c.save();c.font='400 20px Arial, sans-serif';
         const words=entry.name.split(' ');let firstLine='';
         while(words.length && c.measureText(firstLine ? firstLine+' '+words[0] : words[0]!).width<=nameWidth)firstLine+=(firstLine ? ' ' : '')+words.shift();

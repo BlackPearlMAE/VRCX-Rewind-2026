@@ -36,6 +36,39 @@ test('saved hours demo opens offline without a database without a header badge',
   await expect(page.getByRole('button', { name: 'Try demo', exact: true })).toBeFocused();
 });
 
+test('crowded streak counts stay next to their bars as the demo resizes', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 2560, height: 1080 });
+  await page.goto('/');
+  await enterSite(page);
+  await page.getByRole('button', { name: 'Try demo', exact: true }).click();
+  await page.getByRole('button', { name: 'Go to Longest streak of days played', exact: true }).click();
+
+  const chart = page.locator('.streak-timeline');
+  await expect(chart).toBeVisible();
+  const countLayout = () => chart.locator('.streak-run-count').evaluateAll(labels => {
+    const shown = labels.filter(label => getComputedStyle(label).visibility === 'visible');
+    const boxes = shown.map(label => label.getBoundingClientRect());
+    return {
+      shown: shown.length,
+      runs: labels.length,
+      nearBars: shown.every((label, index) => Math.abs(label.parentElement!.getBoundingClientRect().top - boxes[index]!.bottom - 6) < 1),
+      overlaps: boxes.some((box, index) => index > 0 && boxes[index - 1]!.right > box.left),
+    };
+  });
+
+  const wide = await countLayout();
+  expect(wide.shown).toBeGreaterThan(20);
+  expect(wide.nearBars).toBe(true);
+  expect(wide.overlaps).toBe(false);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(async () => (await countLayout()).shown).toBeLessThan(wide.shown);
+  expect(await countLayout()).toMatchObject({ runs: wide.runs, nearBars: true, overlaps: false });
+  await expect(chart.locator('.streak-run[data-rank="1"] .streak-run-count')).toBeVisible();
+  await page.setViewportSize({ width: 2560, height: 1080 });
+  await expect.poll(countLayout).toEqual(wide);
+});
+
 test('demo and imported totals remain separate when switching sources on mobile', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.setViewportSize({ width: 390, height: 844 });

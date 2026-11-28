@@ -23,6 +23,8 @@ for (const port of [4173, 4174]) test(`fictional demo fills every section and sh
   for (const id of ['added','time','overlap','strangers','mutuals','boops','invites','requests']) expect(await page.locator(`[data-friends="${id}"] .worlds-entry`).count()).toBe(10);
   await page.getByRole('button', { name: 'Go to Online at the same time', exact: true }).click();
   await expect(page.locator('[data-friends="overlap"] .friends-comparison')).toHaveText('They were online during 28% of your recorded playtime.');
+  await page.getByRole('button', { name: 'Go to Strangers you crossed paths with', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Strangers you crossed paths with', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Go to Friends in common', exact: true }).click();
   await expect(page.locator('[data-friends="mutuals"] .friends-comparison')).toHaveText('You share 21% of your friend list.');
   await page.getByRole('button', { name: 'Go to Share', exact: true }).click();

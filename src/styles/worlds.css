@@ -29,6 +29,15 @@
 .worlds-entry .record-world-image { width: 6rem; flex: 0 0 6rem; margin: 0; }
 .worlds-entry .record-world-image img { width: 100%; height: 3.75rem; object-fit: cover; border-radius: .25rem; opacity: .9; }
 .worlds-entry .record-world-name { display: none; }
+.worlds-thumbnail-action { position: relative; flex-shrink: 0; }
+.worlds-hide-thumbnail { position: absolute; inset: 0; display: grid; place-items: center; padding: 0; color: #fff; background: transparent; border: 0; border-radius: .25rem; cursor: pointer; }
+.worlds-hide-thumbnail:hover { outline: 1px solid #d9b9e5; outline-offset: 3px; }
+.worlds-hide-thumbnail .world-icon { display: none; }
+.record-world-image[hidden] + .worlds-hide-thumbnail { position: relative; width: 2rem; height: 2rem; color: #d9b9e5; border: 1px solid #d9b9e580; background: #d9b9e512; }
+.record-world-image[hidden] + .worlds-hide-thumbnail .world-icon { display: block; width: 1.35rem; height: 1.35rem; }
+.worlds-thumbnail-action.exclusion-flight .record-world-image { width: 100%; height: 100%; margin: 0; }
+.worlds-thumbnail-action.exclusion-flight .record-world-image img { width: 100%; height: 100%; object-fit: cover; border-radius: .25rem; }
+.worlds-thumbnail-action.exclusion-flight .record-world-name { display: none; }
 .worlds-ranked .worlds-body { display: block; }
 .worlds-ranked .worlds-overview { display: none; }
 .worlds-ranked .worlds-list { grid-template-rows: repeat(5, auto); grid-auto-flow: column; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 3rem; }

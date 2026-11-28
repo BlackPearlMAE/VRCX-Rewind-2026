@@ -115,7 +115,43 @@ test('first visit plays tones, revisits stay finished and silent, and a new data
   await expect(page.getByRole('button', { name: 'Unmute sound', exact: true })).toHaveAttribute('aria-pressed', 'true');
 });
 
- test('saved mute silences the timeline before entering the recap', async ({ page }) => {
+test('the timeline finishes and navigation works when native audio hold is unavailable', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.addInitScript(() => {
+    Object.defineProperty(AudioParam.prototype, 'cancelAndHoldAtTime', { value: undefined });
+    const voices: OscillatorNode[] = [];
+    Object.assign(window, { openingVoices: voices });
+    const Native = window.AudioContext;
+    window.AudioContext = class extends Native {
+      createOscillator() {
+        const oscillator = super.createOscillator();
+        voices.push(oscillator);
+        return oscillator;
+      }
+    };
+  });
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/');
+  await enterSite(page);
+  await page.getByRole('button', { name: 'Try demo', exact: true }).click();
+  await expect(page.locator('.slice-transition')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Mute sound', exact: true })).toBeVisible();
+  const next = page.getByRole('button', { name: 'Next page', exact: true });
+  await next.click();
+  const opening = page.locator('[aria-labelledby=opening-title]');
+  const timeline = opening.locator('.monthly-timeline');
+  await expect(timeline).toHaveAttribute('data-reveal', 'running');
+  await expect(timeline).toHaveAttribute('data-reveal', 'complete');
+  const voiceCount = await page.evaluate(() => (window as Window & { openingVoices?: OscillatorNode[] }).openingVoices?.length);
+  expect(voiceCount).toBe(8);
+  await next.click();
+  await expect(opening).toBeHidden();
+  await expect(page.locator('#records-story-title')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('saved mute silences the timeline before entering the recap', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('vrcx-rewind:audio-settings', JSON.stringify({ volume: .1, muted: true, expiresAt: Date.now() + 86400000 }));
     (window as any).__openingVoices = 0;

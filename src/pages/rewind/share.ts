@@ -5,7 +5,7 @@ import { getVRChatImagesAllowed, setVRChatImagesAllowed, onVRChatImagesChange, p
 import type { OwnAvatarPicture, OwnShareProfile } from '../../data/own-avatar-query';
 import { defaultShareColors, drawShareCard, type ShareCardData, type ShareCardKind, type ShareFriendRegion } from '../../export/share-card';
 
-export function createSharePage(onPrevious: () => void, onShow: () => void, loadProfile: () => Promise<OwnShareProfile>, onExclude?: (person: {userId: string; name: string}, trigger: HTMLElement) => void) {
+export function createSharePage(onPrevious: () => void, onShow: () => void, loadProfile: () => Promise<OwnShareProfile>, onExclude?: (person: {userId: string; name: string}, trigger: HTMLElement, picture?: HTMLImageElement) => void) {
   const section = document.createElement('section');
   section.className = 'opening-card share-page'; section.dataset.page = 'share'; section.hidden = true; section.tabIndex = -1;
   section.setAttribute('aria-labelledby','share-title');
@@ -32,7 +32,7 @@ export function createSharePage(onPrevious: () => void, onShow: () => void, load
   addPageKeyboardNavigation(section,onPrevious);
   const canvas=section.querySelector<HTMLCanvasElement>('canvas')!;
   const friendTargets=section.querySelector<HTMLElement>('.share-friend-targets')!;
-  function renderFriendTargets(regions: ShareFriendRegion[]) {
+  function renderFriendTargets(regions: ShareFriendRegion[], pictures: ReadonlyMap<string, HTMLImageElement>) {
     const focused=document.activeElement;
     const focusedIndex=focused instanceof HTMLButtonElement && focused.parentElement===friendTargets ? [...friendTargets.children].indexOf(focused) : -1;
     const buttons=regions.map(region=>{
@@ -40,7 +40,7 @@ export function createSharePage(onPrevious: () => void, onShow: () => void, load
       button.setAttribute('aria-label',`Exclude ${region.name} from this recap`);
       button.title='Exclude from Rewind';
       Object.assign(button.style,{left:`${region.x/canvas.width*100}%`,top:`${region.y/canvas.height*100}%`,width:`${region.width/canvas.width*100}%`,height:`${region.height/canvas.height*100}%`,borderRadius:region.circle ? '50%' : '1.25rem'});
-      button.addEventListener('click',()=>onExclude?.(region,button));
+      button.addEventListener('click',()=>onExclude?.(region,button,pictures.get(region.userId)));
       return button;
     });
     friendTargets.replaceChildren(...buttons);
@@ -170,7 +170,7 @@ export function createSharePage(onPrevious: () => void, onShow: () => void, load
     const regions: ShareFriendRegion[]=[];
     drawShareCard(canvas,kind,data,{onFriendRegion:onExclude ? region=>regions.push(region) : undefined,name:name.value,picture:selectedPicture,worldImages:activeWorldImages,friendImages:activeFriendImages,friendNames:true,gradientColor:gradient.value,shadowColor:shadow.value});
     section.style.setProperty('--share-card-ratio',String(canvas.width/canvas.height));
-    renderFriendTargets(regions);
+    renderFriendTargets(regions, activeFriendImages);
     const hasRemoteProfile=selectedSource==='remote' && selectedPicture?.dataset.exportSafe==='false';
     const previewOnly=!!hasRemoteProfile || cardWorlds().some(entry=>activeWorldImages.get(entry.worldId)?.dataset.exportSafe==='false') || (kind!=='worlds' && cardFriends().some(person=>activeFriendImages.get(person.userId)?.dataset.exportSafe==='false'));
     const download=section.querySelector<HTMLButtonElement>('.share-download')!;

@@ -20,7 +20,7 @@ export function createStoryPage(onBack: () => void, onContinue: (() => void) | u
   section.setAttribute('aria-labelledby', options.id ?? 'story-title');
   section.innerHTML = `${recapHeader}
     <div class="recap-stage"><div class="story-content"><p class="story-kicker">Alright, let&rsquo;s get started with</p><div class="story-heading"></div><p class="story-copy">and see what you were up to.</p></div></div>
-    <footer class="story-footer"><p class="story-navigation-hint">Use the arrow keys <kbd aria-label="Left arrow">&larr;</kbd> / <kbd aria-label="Right arrow">&rarr;</kbd> or <kbd>A</kbd> / <kbd>D</kbd>.<br>You can also continue with <kbd>Space</kbd>.</p></footer>`;
+    <footer class="story-footer"><p class="story-navigation-hint">Click or tap the side panels to navigate.<br>Or use <kbd aria-label="Left arrow">&larr;</kbd> / <kbd aria-label="Right arrow">&rarr;</kbd>, <kbd>A</kbd> / <kbd>D</kbd>, or <kbd>Space</kbd>.</p></footer>`;
   if (options.kicker) section.querySelector('.story-kicker')!.textContent = options.kicker;
   if (options.copy) section.querySelector('.story-copy')!.textContent = options.copy;
   if (options.disclaimer) {

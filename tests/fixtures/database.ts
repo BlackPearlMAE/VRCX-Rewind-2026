@@ -3,7 +3,7 @@ import { syntheticSessionDemo } from '../../src/data/session-demo';
 import initSqlJs from 'sql.js';
 const engine = initSqlJs();
 
-export async function databaseFixture(kind: 'compatible' | 'unsupported' | 'unrelated' | 'benchmark' | 'multi-account' | 'old-version' | 'future-version' | 'missing-version' | 'invalid-version' | 'missing-configs' = 'compatible'): Promise<Buffer> {
+export async function databaseFixture(kind: 'compatible' | 'unsupported' | 'unrelated' | 'benchmark' | 'multi-account' | 'old-version' | 'future-version' | 'missing-version' | 'invalid-version' | 'missing-configs' = 'compatible', version: 17 | 18 = 18): Promise<Buffer> {
   const SQL = await engine;
   const db = new SQL.Database();
   try {
@@ -15,7 +15,7 @@ export async function databaseFixture(kind: 'compatible' | 'unsupported' | 'unre
         INSERT INTO credentials VALUES ('SYNTHETIC-DO-NOT-TRANSMIT');`);
       if (kind !== 'missing-configs') {
         db.run('CREATE TABLE configs (key TEXT PRIMARY KEY, value TEXT);');
-        if (kind !== 'missing-version') db.run('INSERT INTO configs VALUES (?, ?)', ['config:vrcx_databaseversion', kind === 'old-version' ? '17' : kind === 'future-version' ? '19' : kind === 'invalid-version' ? '18oops' : '18']);
+        if (kind !== 'missing-version') db.run('INSERT INTO configs VALUES (?, ?)', ['config:vrcx_databaseversion', kind === 'old-version' ? '16' : kind === 'future-version' ? '19' : kind === 'invalid-version' ? '18oops' : String(version)]);
         db.run('INSERT INTO configs VALUES (?, ?)', ['config:unrelated-private-setting', 'SYNTHETIC-CONFIG-DO-NOT-TRANSMIT']);
       }
     }

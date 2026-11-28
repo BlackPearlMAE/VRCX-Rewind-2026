@@ -12,9 +12,32 @@ export function createStreakTimeline(options: { revealDurationMs?: number; onRev
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const duration = options.revealDurationMs ?? 2500;
   let frame = 0;
-  let bars: { element: HTMLElement; fill: HTMLElement; label: HTMLElement; days: number; rank: number }[] = [];
+  let bars: { element: HTMLElement; fill: HTMLElement; label: HTMLElement; place?: HTMLElement; days: number; rank: number }[] = [];
   let revealing = false;
   const awardedRanks = new Set<number>();
+
+  function layoutLabels() {
+    if (!runsLayer.clientWidth) return;
+    const counts: { left: number; right: number }[] = [];
+    const places: { left: number; right: number }[] = [];
+    function placeLabel(label: HTMLElement, center: number, occupied: { left: number; right: number }[]) {
+      const halfWidth = label.offsetWidth / 2 + 2;
+      const left = center - halfWidth;
+      const right = center + halfWidth;
+      const overlaps = occupied.some(slot => left < slot.right && right > slot.left);
+      label.style.visibility = overlaps ? 'hidden' : '';
+      if (!overlaps) occupied.push({ left, right });
+    }
+
+    // Give the longest streaks first choice of space, with ties in date order.
+    for (const bar of [...bars].sort((a, b) => a.rank - b.rank)) {
+      const center = bar.element.offsetLeft + bar.element.offsetWidth / 2;
+      placeLabel(bar.label, center, counts);
+      if (bar.place) placeLabel(bar.place, center, places);
+    }
+  }
+  const resizeObserver = new ResizeObserver(layoutLabels);
+  resizeObserver.observe(runsLayer);
   function stop(completed = false) {
     cancelAnimationFrame(frame); frame = 0;
     if (revealing) options.onRevealStop?.(completed);
@@ -56,8 +79,6 @@ export function createStreakTimeline(options: { revealDurationMs?: number; onRev
         return day;
       }));
       bars = [];
-      const laneEnds: number[] = [];
-      const plotWidth = runsLayer.clientWidth || Math.max(320, innerWidth - 112);
       runsLayer.replaceChildren(...[...runs].sort((a, b) => a.start.localeCompare(b.start)).flatMap(run => {
         const first = Math.max(0, (Date.parse(run.start) - start) / 86400000);
         const end = Math.min(count, (Date.parse(run.end) - start) / 86400000 + 1);
@@ -79,19 +100,15 @@ export function createStreakTimeline(options: { revealDurationMs?: number; onRev
           return day;
         }));
         const label = document.createElement('span'); label.className = 'streak-run-count';
-        const center = (first + end) / 2 / count * plotWidth;
-        const halfWidth = Math.max(rank <= 3 ? 20 : 0, String(run.length).length * 4 + 5);
-        let lane = laneEnds.findIndex(right => right < center - halfWidth);
-        if (lane < 0) lane = laneEnds.length;
-        laneEnds[lane] = center + halfWidth;
-        bar.style.setProperty('--streak-count-lane', String(lane));
+        label.style.minWidth = `${String(run.length).length}ch`;
         bar.append(fill, label);
+        let place: HTMLElement | undefined;
         if (rank <= 3) {
-          const place = document.createElement('span'); place.className = 'streak-run-place';
+          place = document.createElement('span'); place.className = 'streak-run-place';
           place.textContent = ['1st', '2nd', '3rd'][rank - 1]!;
           bar.append(place);
         }
-        bars.push({ element: bar, fill, label, days: run.length, rank });
+        bars.push({ element: bar, fill, label, place, days: run.length, rank });
         return [bar];
       }));
       months.replaceChildren(...Array.from({ length: 12 }, (_, month) => {
@@ -113,6 +130,7 @@ export function createStreakTimeline(options: { revealDurationMs?: number; onRev
       const podiumSummary = rankedLengths.slice(0, 3).map((days, index) => `${['First', 'Second', 'Third'][index]} place: ${days} consecutive days`).join('; ');
       if (podiumSummary) element.setAttribute('aria-label', `${element.getAttribute('aria-label')}; ${podiumSummary}`);
       paint(Infinity);
+      layoutLabels();
     },
     suspend: stop,
     setDisplay(visible: boolean, animate = false) {

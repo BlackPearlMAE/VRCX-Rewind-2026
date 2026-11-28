@@ -54,6 +54,7 @@ test('the example is optional and its dropdown entry can be removed without chan
   const dropdown = page.getByRole('region', { name: 'Excluded users', exact: true });
   await expect(dropdown).toBeVisible();
   await expect(dropdown.locator('.exclusions-list > li > span')).toHaveText('Example user');
+  await expect(dropdown.locator('.exclusions-entry-icon svg')).toBeVisible();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(await page.evaluate(() => (window as any).__recapExclusions.exclusions.ids())).toEqual([]);
   await page.getByRole('button', { name: 'Remove Example user from exclusions' }).click();
@@ -116,6 +117,7 @@ test('real avatar exclusions refill statistics and restore through the dropdown 
   await expect(time.locator('.friends-number')).toHaveText('83');
   await page.getByRole('button', { name: 'Excluded users (1)', exact: true }).click();
   await expect(page.locator('.exclusions-list > li > span')).toHaveText('Moss');
+  await expect(page.locator('.exclusions-entry-icon .friends-avatar')).toHaveText('M');
   await page.getByRole('button', { name: 'Remove Moss from exclusions', exact: true }).click();
   await expect(time.locator('.friends-number')).toHaveText('126');
   await expect(page.locator('.exclusions-list li')).toHaveCount(0);

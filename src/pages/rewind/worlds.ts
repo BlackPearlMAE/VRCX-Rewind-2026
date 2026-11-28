@@ -3,12 +3,13 @@ import { createPageProgress, recapPages } from '../../components/page-progress';
 import { addPageKeyboardNavigation } from '../../components/page-navigation';
 import { recapHeader } from '../../components/recap-header';
 import { createTitle } from '../../components/title';
+import { createWorldIcon } from '../../components/world-icon';
 import { createRecapImagePermission } from '../../components/recap-image-permission';
 import { createWorldThumbnail, getVRChatImagesAllowed, onVRChatImagesChange, permittedImage } from '../../components/world-thumbnail';
-import { worldsDefinitions, type WorldsId, type WorldsPageData } from '../../data/worlds-data';
+import { worldsDefinitions, type WorldEntry, type WorldsId, type WorldsPageData } from '../../data/worlds-data';
 
 /** Desktop chapter pages; thumbnails enhance the same readable, text-first lists. */
-export function createWorldsPage(id: WorldsId, onPrevious: () => void, onNext: (() => void) | undefined, onShow: () => void, audio?: Pick<ReturnType<typeof createTimelineSynth>, 'start' | 'update' | 'settled' | 'finish' | 'stop'>) {
+export function createWorldsPage(id: WorldsId, onPrevious: () => void, onNext: (() => void) | undefined, onShow: () => void, audio?: Pick<ReturnType<typeof createTimelineSynth>, 'start' | 'update' | 'settled' | 'finish' | 'stop'>, onExclude?: (entry: WorldEntry, thumbnail: HTMLElement) => void) {
   const definition = worldsDefinitions.find(page => page.id === id)!;
   const section = document.createElement('section');
   section.className = 'opening-card worlds-page';
@@ -133,7 +134,7 @@ export function createWorldsPage(id: WorldsId, onPrevious: () => void, onNext: (
     section.querySelector('.worlds-number')!.textContent = format(result!.total);
     section.querySelector('.worlds-unit')!.textContent = definition.unit;
     summary.textContent = `${format(result!.total)} ${definition.unit} across all worlds`;
-    listLabel.textContent = ranked ? `Top ${result!.entries.length} · ${result!.detail ?? ''}` : id === 'owned' ? 'Your instances by world' : result!.detail ?? 'Recent discoveries';
+    listLabel.textContent = !result!.entries.length ? 'No worlds left in this ranking.' : id === 'discoveries' ? `Top ${result!.entries.length} new worlds by hours since discovery` : ranked ? `Top ${result!.entries.length} · ${result!.detail ?? ''}` : id === 'owned' ? 'Your instances by world' : result!.detail ?? 'Recent discoveries';
     counters.push(
       { element: section.querySelector('.worlds-number')!, value: result!.total, duration: revealDurationMs, text: format },
       { element: summary, value: result!.total, duration: revealDurationMs, text: value => `${format(value)} ${definition.unit} across all worlds` },
@@ -172,7 +173,19 @@ export function createWorldsPage(id: WorldsId, onPrevious: () => void, onNext: (
       bars.push({ element: bar, share: entry.value / largest * 100, duration });
       if (days) counters.push({ element: days, value: entry.value, duration, text: current => `${(current / 24).toLocaleString('en-US', { maximumFractionDigits: 1 })} Days` });
       if (!entry.detail) counters.push({ element: hours, value: entry.value, duration, text: current => `${format(current)} ${id === 'time' || id === 'discoveries' ? 'h' : id === 'visits' ? 'visits' : 'instances'}` });
-      item.append(rank, thumbnail.element, name, value, bar);
+      let image: HTMLElement = thumbnail.element;
+      if (onExclude) {
+        image = document.createElement('div');
+        image.className = 'worlds-thumbnail-action';
+        const hide = document.createElement('button');
+        hide.type = 'button'; hide.className = 'worlds-hide-thumbnail';
+        hide.setAttribute('aria-label', `Hide ${entry.name} from world rankings`);
+        hide.title = 'Hide from world rankings';
+        hide.append(createWorldIcon());
+        hide.addEventListener('click', () => onExclude(entry, image));
+        image.append(thumbnail.element, hide);
+      }
+      item.append(rank, image, name, value, bar);
       thumbnail.setVisible(!section.hidden);
       return item;
     }));
@@ -181,11 +194,13 @@ export function createWorldsPage(id: WorldsId, onPrevious: () => void, onNext: (
   section.querySelector('.opening-back')!.addEventListener('click', onPrevious);
   return {
     section,
-    update(value?: WorldsPageData) {
-      stopReveal(); result = value; seen = false;
+    update(value?: WorldsPageData, animate = true) {
+      stopReveal(); result = value;
+      if (animate) seen = false;
       if (!value) { thumbnails.forEach(thumbnail => thumbnail.dispose()); thumbnails = []; list.replaceChildren(); }
       paint();
-      if (!section.hidden) present();
+      if (!animate) paintCounts(Infinity);
+      else if (!section.hidden) present();
     },
     show(defer = false) {
       section.hidden = false; onShow();

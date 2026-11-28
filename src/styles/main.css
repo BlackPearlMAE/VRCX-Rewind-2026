@@ -1377,16 +1377,20 @@ body.is-opening-startup { overflow: hidden; }
 .exclusions-empty, .exclusions-status { margin: .5rem 0 0; font-size: .875rem; line-height: 1.45; color: #bbc6c3; }
 .exclusions-empty[hidden], .exclusions-status:empty { display: none; }
 .exclusions-list { padding: 0; margin: 0; list-style: none; }
-.exclusions-list li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .6rem 0; border-bottom: 1px solid #ffffff12; }
+.exclusions-list li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .6rem; padding: .6rem 0; border-bottom: 1px solid #ffffff12; }
 .exclusions-list li:last-child { border-bottom: 0; }
 .exclusions-list li span { overflow-wrap: anywhere; min-width: 0; }
+.exclusions-entry-icon { display: grid; place-items: center; width: 2rem; height: 2rem; color: #d9b9e5; }
+.exclusions-entry-icon > svg { display: block; width: 1.5rem; height: 1.5rem; flex: none; }
+.exclusions-entry-icon:has(> .world-icon) { color: #a9ebe2; border: 1px solid #a9ebe26b; border-radius: .5rem; background: #a9ebe21a; }
+.exclusions-entry-icon .friends-avatar { width: 2rem; height: 2rem; font-size: .85rem; }
 .exclusions-remove { flex-shrink: 0; display: grid; place-items: center; width: 1.8rem; height: 1.8rem; padding: .25rem; border: 0; border-radius: .3rem; background: transparent; color: #c2b9c8; cursor: pointer; }
 .exclusions-remove:hover { background: #ffffff0b; color: #ff91a1; }
 .exclusions-remove:disabled { opacity: .4; cursor: progress; }
-.friends-exclusion-intro { width: min(100%, 50rem); margin-top: 2.75rem; padding: 1rem 1.25rem; border: 1px solid #ffffff30; border-radius: .65rem; background: #ffffff05; text-align: left; font-size: 1rem; font-style: normal; font-weight: 400; line-height: 1.45; text-shadow: none; color: #d7dfdc; }
+:is(.friends-exclusion-intro, .worlds-exclusion-intro) { width: min(100%, 50rem); margin-top: 2.75rem; padding: 1rem 1.25rem; border: 1px solid #ffffff30; border-radius: .65rem; background: #ffffff05; text-align: left; font-size: 1rem; font-style: normal; font-weight: 400; line-height: 1.45; text-shadow: none; color: #d7dfdc; }
 .exclusion-intro-caption { margin: 0 0 .65rem; color: #fff; font: italic 700 1.5rem/1.25 Arial, Helvetica, sans-serif; }
-.friends-exclusion-intro p { margin: 0; }
-.friends-exclusion-intro .exclusion-example-instruction { margin-top: .75rem; color: #c8d6d2; }
+:is(.friends-exclusion-intro, .worlds-exclusion-intro) p { margin: 0; }
+:is(.friends-exclusion-intro, .worlds-exclusion-intro) .exclusion-example-instruction { margin-top: .75rem; color: #c8d6d2; }
 .exclusion-example { display: flex; align-items: center; gap: 1rem; margin: .75rem 0; }
 .exclusion-example-avatar { display: grid; place-items: center; width: 3rem; height: 3rem; border: 1px solid #d9b9e580; border-radius: .5rem; color: #d9b9e5; background: #d9b9e512; cursor: pointer; box-shadow: 0 0 12px #d9b9e530; }
 .is-complete .exclusion-example > span { opacity: .5; text-decoration: line-through; }
@@ -1494,7 +1498,7 @@ body > .exclusion-flight { position: fixed; z-index: 1000; pointer-events: none;
 .is-recap-active :is(.story-kicker, .story-copy) { font-size: clamp(1.125rem, min(3dvh, 2.4vw), 3rem); line-height: 1.35; }
 .is-recap-active .story-heading h2 { font-size: clamp(2rem, min(6dvh, 4.5vw), 6rem); line-height: 1.2; }
 .is-recap-active .story-disclaimer { margin-top: clamp(.75rem, 1.8dvh, 1.5rem); font-size: clamp(1rem, min(1.6dvh, 1.3vw), 1.25rem); }
-.is-recap-active .friends-exclusion-intro { margin-top: clamp(1rem, 2dvh, 1.75rem); padding: .75rem 1rem; }
+.is-recap-active :is(.friends-exclusion-intro, .worlds-exclusion-intro) { margin-top: clamp(1rem, 2dvh, 1.75rem); padding: .75rem 1rem; }
 .is-recap-active .exclusion-intro-caption { font-size: clamp(1.25rem, 2dvh, 1.75rem); }
 .is-recap-active .end-share-button { margin-top: clamp(1rem, 2dvh, 2rem); }
 
@@ -1551,3 +1555,23 @@ dialog.image-recommendation-dialog { width: min(30rem, calc(100% - 2rem)); box-s
 .image-recommendation-dialog .image-permission-label { font-size: 1rem; }
 .image-recommendation-dialog .dialog-note { text-align: left; }
 .image-recommendation-dialog .dialog-done { width: 100%; }
+
+/* Firefox selects Arial Bold Italic for Arial 900 instead of the intended Arial Black. */
+@supports (-moz-appearance: none) {
+  @font-face {
+    font-family: 'Rewind Arial Black';
+    src: local('Arial Black'), local('Arial-Black');
+    font-weight: 900;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'Rewind Inter';
+    src: url('../assets/fonts/inter-latin-900-italic.woff2') format('woff2');
+    font-weight: 900;
+    font-style: italic;
+    font-display: swap;
+  }
+  :is(.landing-header h1, .story-heading h2, .worlds-heading h2, .friends-heading h2, .transition-title) {
+    font-family: 'Rewind Arial Black', 'Rewind Inter', Arial, Helvetica, sans-serif;
+  }
+}

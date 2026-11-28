@@ -7,6 +7,11 @@ export const recordedWorldsDemo: { generatedAt: string; pages: WorldsPageData[] 
   "pages": [
     {
       "id": "discoveries",
+      "reserve": {
+        "worldId": "wrld_7850c95d-dcc3-41ef-b665-2dec82f54087",
+        "name": "Glaive - 1984 Animation",
+        "value": 8
+      },
       "total": 51,
       "entries": [
         {
@@ -424,6 +429,11 @@ export const recordedWorldsDemo: { generatedAt: string; pages: WorldsPageData[] 
     },
     {
       "id": "visits",
+      "reserve": {
+        "worldId": "wrld_ed4a3561-4498-4450-96ee-9b711f730586",
+        "name": "Seclusion",
+        "value": 7
+      },
       "total": 533,
       "uniqueWorlds": 60,
       "entries": [
@@ -867,6 +877,11 @@ export const recordedWorldsDemo: { generatedAt: string; pages: WorldsPageData[] 
     },
     {
       "id": "time",
+      "reserve": {
+        "worldId": "wrld_18d81667-8f84-42e0-8e01-2cdbe361d036",
+        "name": "Estates (POSTAL 2)",
+        "value": 9
+      },
       "total": 617.3813888888885,
       "entries": [
         {
@@ -1309,6 +1324,11 @@ export const recordedWorldsDemo: { generatedAt: string; pages: WorldsPageData[] 
     },
     {
       "id": "owned",
+      "reserve": {
+        "worldId": "wrld_d2aad3fe-5d0f-45fc-9778-68c497dc5a5f",
+        "name": "Ritual (v.1.3)",
+        "value": 4
+      },
       "total": 109,
       "entries": [
         {
